@@ -1,8 +1,9 @@
 ***** READ ME ******
 
-This repository contains the scripts for the paper ""
-Authors: 
-Pre-preprint:
+This repository contains the scripts for the paper "The role of sex hormones in severe mental illness: a genetic exploration"
+Authors: R. R. Veeneman, K. J. H. Verweij, I. E. C. Sommer, J. L. Treur,* J. M. Vermeulen,*
+*Shared last authors
+Pre-preprint: https://www.medrxiv.org/content/10.1101/2024.06.25.24309226v1
 
 Last updated: 07-09-2024
 
