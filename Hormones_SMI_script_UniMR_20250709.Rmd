@@ -1,0 +1,3147 @@
+---
+title: "SMI - Hormones"
+output: html_notebook
+author: "Rada Veeneman"
+---
+
+# Install and load packages
+```{r Packages, echo=TRUE}
+
+# Change the below path to the folder where R is installed on your own computer
+#R_installation_path <- R.home()
+#print(R_installation_path)
+#setwd("C:/PROGRA~1/R/R-43~1.2")
+
+# Instal the Two Sample MR R package
+#install.packages("remotes")
+#install.packages("devtools")
+#install.packages("curl")
+#install.packages("fansi")
+#install.packages("MendelianRandomization")
+library(remotes)
+library(devtools)
+#install_github("MRCIEU/TwoSampleMR", force=TRUE)
+
+# Install these extra packages 
+
+#install.packages("shiny")
+#install.packages("Rcpp")
+#install.packages("plyr")
+#install.packages("dplyr")
+#install.packages("data.table")
+#install.packages("bitops")
+#install.packages("ggplot2")
+#install.packages("writexl")
+#install.packages("openxlsx")
+#install.packages("simex")
+#install.packages("ggplot2")
+
+# Install packages for the other MR methods
+
+#install.packages(c('survey'));
+#install.packages("psych")
+#install.packages("http://cnsgenomics.com/software/gsmr/static/gsmr_1.0.9.tar.gz",repos=NULL,type="source")
+#if (!require("devtools")) { install.packages("devtools") } else {}
+#devtools::install_github("rondolab/MR-PRESSO")
+
+# Install packages multivariable MR
+
+# First way to install MVMR, how Eleanor Sanderson previously send it to us
+#install.packages("remotes")
+#remotes::install_github("WSpiller/MVMR")
+
+# Second way to install MVMR, how I found it on the internet, with Eleanor Sanderson's name on it, 
+# also install this one! Some steps I copied from this method and also the vignette is very useful to follow
+# the steps you're doing
+#install.packages(c("devtools", "knitr", "rmarkdown"))
+#install_github("WSpiller/MRPracticals",build_opts = c("--no-resave-data", "--no-manual"),build_vignettes = TRUE, force=TRUE)
+#vignette("MVMR Tutorial")
+
+# Call on packages
+
+library("TwoSampleMR")
+library("writexl")
+library("gsmr")
+library("simex") 
+library("MRPRESSO")
+library("psych")
+library("plyr")
+library("dplyr")
+library("data.table")
+library("MVMR")
+library("openxlsx")
+library("ggplot2")
+
+# Note: after you run the below comment for the first time, TwoSampleMR will require you to log in with google account
+# a web browser should open up after you run the following:
+
+#ao <- available_outcomes()
+
+# Try the below TwoSampleMR comment again to test if the package works
+# this should give you a list of variables that are available in the MR Base database
+
+#head(ao)
+```
+
+Where do I find my data?
+- Original data is located on Onedrive (/Hormones/Data/Original_data)
+- Files used for analyses in R are located here: C:/Users/rveeneman/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses
+- Output files are located on Onedrive C:/Users/rveeneman/OneDrive - Amsterdam UMC/PhD/Hormones/Results
+- Scripts can be found in C:/Users/rveeneman/OneDrive - Amsterdam UMC/PhD/Hormones/Scripts
+
+# STEP 1: Select exposure data
+```{r Exposure data, echo=TRUE}
+# Here you read the exposure SNPs in with a commando specific to the TwoSampleMR
+# package ('read_exposure_data') which will change the data into the format that is needed to run the analyses
+
+# Read in all SNPs, select genome-wide significant for exposure
+
+#### Oestrogen ####
+# Pre-menopausal, binary, Women
+estr_pre_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Epre_bin_exp.txt")
+cat("estr_pre_exp_dat:", dim(estr_pre_exp_dat), "\n") #4 #One has a double reference allele so this one will drop, it is actually 3 SNPs
+
+# Search for a proxy SNP
+# On LDLink (https://ldlink.nih.gov/) I couldn't find one for rs75770066
+
+# Pre-menopausal, continuous, Women
+#estr_pre_cont_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Epre_cont_exp.txt")
+#dim(estr_pre_cont_exp_dat) #1
+
+# Post-menopausal, binary, Women
+estr_post_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Epost_bin_exp.txt")
+cat("estr_post_exp_dat:", dim(estr_post_exp_dat), "\n") #6
+estr_post_Depr_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Epost_bin_exp_DeprB_f.txt")
+cat("estr_post_Depr_exp_dat:", dim(estr_post_Depr_exp_dat), "\n") #6
+
+# Post-menopausal, continuous, Women
+#estr_post_cont_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Epost_cont_exp.txt")
+#dim(estr_post_cont_exp_dat) #0 -> NO SIGNIFICANT SNPS
+
+# Pre- & post-menopausal, binary, women
+estr_f_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/E_f_exp.txt")
+cat("estr_f_exp_dat:", dim(estr_f_exp_dat), "\n") #8 
+estr_f_Depr_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/E_f_exp_DeprB_f.txt")
+cat("estr_f_Depr_exp_dat:", dim(estr_f_Depr_exp_dat), "\n") #8 
+
+# Males
+estr_m_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/E_males_exp.txt")
+cat("estr_m_exp_dat:", dim(estr_m_exp_dat), "\n") #24
+estr_m_Depr_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/E_males_exp_DeprB_m.txt")
+cat("estr_m_Depr_exp_dat:", dim(estr_m_Depr_exp_dat), "\n") #24
+estr_m_Bip_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/E_males_exp_Bip_m.txt")
+cat("estr_m_Bip_exp_dat:", dim(estr_m_Bip_exp_dat), "\n") #24
+
+#### Testosterone ####
+# Women, pre-menopausal
+#test_pre_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Tpre_exp.txt")
+#dim(test_pre_exp_dat) #0 -> NO SIGNIFICANT SNPS
+
+# Women, post-menopausal
+test_post_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Tpost_exp.txt")
+cat("test_post_exp_dat:", dim(test_post_exp_dat), "\n") #2
+
+# Women, pre- & post-menopause
+test_f_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/T_f_exp.txt")
+cat("test_f_exp_dat:", dim(test_f_exp_dat), "\n") #254
+
+# Males
+test_m_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/T_m_exp.txt")
+cat("test_m_exp_dat:", dim(test_m_exp_dat), "\n") #231 (2 SNPs have been dropped)
+
+# Both sexes
+test_mf_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/T_mf_exp.txt")
+cat("test_mf_exp_dat:", dim(test_mf_exp_dat), "\n") #238
+
+#### Sex-Hormone Binding Globulin (SHBG) ####
+
+# Women, pre-menopausal
+shbg_pre_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SHBGpre_exp.txt")
+cat("shbg_pre_exp_dat:", dim(shbg_pre_exp_dat), "\n") #31
+
+# Women, post-menopausal
+shbg_post_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SHBGpost_exp.txt")
+cat("shbg_post_exp_dat:", dim(shbg_post_exp_dat), "\n") #103
+
+# Males
+shbg_m_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SHBG_m_exp.txt")
+cat("shbg_m_exp_dat:", dim(shbg_m_exp_dat), "\n") #276
+
+# Both sexes
+shbg_mf_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SHBG_mf_exp.txt")
+cat("shbg_mf_exp_dat:", dim(shbg_mf_exp_dat), "\n") #466
+
+# Progesterone
+prog_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Progesterone_exp.txt")
+cat("prog_exp_dat:", dim(prog_exp_dat), "\n") #2
+
+#### Age at menarche ####
+agemc_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/AgeMc_exp.txt")
+cat("agemc_exp_dat:", dim(agemc_exp_dat), "\n") #389
+
+#### Age at menopause #### 
+agemen_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/AgeMen_exp.txt")
+cat("agemen_exp_dat:", dim(agemen_exp_dat), "\n") #290
+
+#### Schizophrenia ####
+# Women
+schiz_f_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SCZ_f_exp.txt")
+cat("schiz_f_exp_dat:", dim(schiz_f_exp_dat), "\n") #1492   
+
+# Males
+schiz_m_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SCZ_m_exp.txt")
+cat("schiz_m_exp_dat:", dim(schiz_m_exp_dat), "\n") #9710
+
+# Both sexes
+schiz_mf_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/SCZ_mf_exp.txt")
+cat("schiz_mf_exp_dat:", dim(schiz_mf_exp_dat), "\n") #20381 
+
+#### Depressive disorder ####
+# Women
+# Blokland -> No significant SNPs
+
+# Males 
+# Blokland -> No significant SNPs
+
+# Both sexes Wray (without UK-Biobank &23andMe)
+deprW_mf_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/DeprW_mf_exp.txt")
+cat("deprW_mf_exp_dat:", dim(deprW_mf_exp_dat), "\n")#53
+deprW_mf_ProgAge_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/DeprW_mf_exp_ProgAgeMcMen.txt")
+cat("deprW_mf_ProgAge_exp_dat:", dim(deprW_mf_ProgAge_exp_dat), "\n") #2
+
+#### Bipolar disorder ####
+# Women
+#bip_f_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam #UMC/PhD/Hormones/Data/Analyses/Exposure/Bip_f_exp.txt")
+#dim(bip_f_exp_dat) #1 -> <2 SNPs, remove
+
+# Males
+# bip_m_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/Bip_m_exp.txt")
+# dim(bip_m_exp_dat) #0 -> NO SIGNIFICANT SNPS
+
+# Both sexes No UKB 
+bipN_mf_exp_dat <- read_exposure_data("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Exposure/BDnoUKB_mf_exp.txt")
+cat("bipN_mf_exp_dat:", dim(bipN_mf_exp_dat), "\n") #3091 -> need to be clumped still
+
+#### Clump data ####
+# Function to retry a clump_data command until it succeeds
+retry_clump_data <- function(data_var, clump_r2) {
+  repeat {
+    tryCatch({
+      assign(data_var, clump_data(get(data_var), clump_r2 = clump_r2), envir = .GlobalEnv)
+      break
+    }, error = function(e) {
+      cat("An error occurred in clumping", data_var, ". Retrying...\n")
+    })
+  }
+}
+
+# List of datasets to be clumped
+datasets <- c("schiz_f_exp_dat", "schiz_m_exp_dat", "schiz_mf_exp_dat", "bipN_mf_exp_dat", "deprW_mf_exp_dat")
+
+# Apply clump_data with retry logic to each dataset
+for (data_var in datasets) {
+  retry_clump_data(data_var, 0.01)
+}
+
+# Print the dimensions of the datasets after clumping
+cat("schiz_f_exp_dat:", dim(schiz_f_exp_dat), "\n")  # 22
+cat("schiz_m_exp_dat:", dim(schiz_m_exp_dat), "\n")  # 56
+cat("schiz_mf_exp_dat:", dim(schiz_mf_exp_dat), "\n") # 185
+cat("bipN_mf_exp_dat:", dim(bipN_mf_exp_dat), "\n")  # 51
+cat("deprW_mf_exp_dat:", dim(deprW_mf_exp_dat), "\n") # 2
+
+
+
+
+```
+
+# STEP 2: Extract the SNP instruments
+```{r Extract instrument SNPs, echo=TRUE}
+# Extract the SNP instruments for your exposure from the outcome GWAS
+
+# Sex hormones
+
+# Exposure data variables
+exposure_hormones_f <- c("estr_pre_exp_dat", 
+                        "estr_post_exp_dat",
+                        "estr_post_Depr_exp_dat",
+                        "estr_f_exp_dat",
+                        "estr_f_Depr_exp_dat",
+                        "test_post_exp_dat",
+                        "test_f_exp_dat",
+                        "shbg_pre_exp_dat",
+                        "shbg_post_exp_dat",
+                        "prog_exp_dat",
+                        "agemc_exp_dat",
+                        "agemen_exp_dat")
+exposure_hormones_m <- c("estr_m_exp_dat",
+                         "estr_m_Depr_exp_dat",
+                         "estr_m_Bip_exp_dat",
+                         "test_m_exp_dat",
+                         "shbg_m_exp_dat")
+exposure_hormones_mf <- c("test_mf_exp_dat",
+                          "shbg_mf_exp_dat")
+
+# Print dim()
+all_exposures_hormones <- c(exposure_hormones_f, exposure_hormones_m, exposure_hormones_mf)
+for(exp_var in all_exposures_hormones) {
+  exposure_data <- get(exp_var)
+  
+  # Print the variable name and its dimensions
+  cat(exp_var, ": ", dim(exposure_data), "\n")
+}
+
+# Outcome file paths
+outcome_hormones_paths_f <- c("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Epre_bin_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Epost_bin_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/E_f_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Tpre_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Tpost_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/T_f_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SHBGpre_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SHBGpost_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Progesterone_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/AgeMc_MR_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/AgeMen_MR_oc.txt")
+outcome_hormones_paths_m <- c("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/E_males_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/T_m_oc.txt",
+                              "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SHBG_m_oc.txt")
+outcome_hormones_paths_mf <- c("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SHBG_mf_oc.txt",
+                               "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/T_mf_oc.txt")
+
+# Mental illness
+
+# Exposure data variables
+exposure_mentalillness_f <- c("schiz_f_exp_dat", 
+                              "bipN_mf_exp_dat",
+                              "deprW_mf_exp_dat",
+                              "deprW_mf_ProgAge_exp_dat")
+exposure_mentalillness_m <- c("schiz_m_exp_dat",
+                              "deprW_mf_exp_dat",
+                              "bipN_mf_exp_dat")
+exposure_mentalillness_mf <- c("deprW_mf_exp_dat",
+                               "schiz_mf_exp_dat",
+                               "bipN_mf_exp_dat")
+
+# Print dim()
+all_exposures_mentalillness <- c(exposure_mentalillness_f, exposure_mentalillness_m, exposure_mentalillness_mf)
+for(exp_var in all_exposures_mentalillness) {
+  exposure_data <- get(exp_var)
+  
+  # Print the variable name and its dimensions
+  cat(exp_var, ": ", dim(exposure_data), "\n")
+}
+
+# Outcome file paths
+outcome_mentalillness_paths_f <- c("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/DeprB_f_oc.txt",
+                                   "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Bip_f_oc.txt",
+                                   "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SCZ_f_oc.txt")
+outcome_mentalillness_paths_m <- c("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/DeprB_m_oc.txt",
+                                   "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/Bip_m_oc.txt",
+                                   "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SCZ_m_oc.txt")
+outcome_mentalillness_paths_mf <- c("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/SCZ_mf_oc.txt",
+                                    "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/DeprW_mf_oc.txt",
+                                    "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Data/Analyses/Outcome/BDnoUKB_mf_oc.txt")
+
+#-------------------Direction: Sex hormones to mental illness-------------------------#
+
+# Create an empty list to store results
+results_HtoM_f <- list()
+results_HtoM_m <- list()
+results_HtoM_mf <- list()
+
+# Nested loop to process each combination of exposure and outcome
+for(exp_var in exposure_hormones_f) {
+  for(outcome_path in outcome_mentalillness_paths_f) {
+    # Print the current exposure and outcome being processed
+    print(paste("Processing exposure:", exp_var, "with outcome file:", outcome_path))
+    
+    # Extract outcome file name for naming
+    outcome_name <- basename(outcome_path)
+    outcome_name <- sub("\\..*$", "", outcome_name)
+    
+    # Print to confirm the outcome name extraction
+    print(paste("Extracted outcome name:", outcome_name))
+    
+    # Read the outcome data using the exposure data variable and outcome file path
+    # Adding a try-catch to capture any errors during reading
+    tryCatch({
+      exposure_snps <- get(exp_var)$SNP
+      # Print to confirm successful retrieval of SNPs
+      print(paste("Retrieved SNPs for exposure:", exp_var))
+      
+      outcome_data <- read_outcome_data(snps = exposure_snps, filename = outcome_path, sep = " ")
+      
+      # Create a unique name for the output variable
+      output_var_name <- paste(exp_var, outcome_name, sep = "_")
+      
+      # Store the data in the results list with the unique name
+      results_HtoM_f[[output_var_name]] <- outcome_data
+      
+      # Print the current combination for verification
+      print(paste("Processed exposure:", exp_var, "with outcome file:", outcome_path, "- saved as", output_var_name))
+    }, error = function(e) {
+      print(paste("Error in processing exposure:", exp_var, "with outcome file:", outcome_path, "- Error message:", e$message))
+    })
+  }
+}
+
+# Nested loop to process each combination of exposure and outcome
+for(exp_var in exposure_hormones_m) {
+  for(outcome_path in outcome_mentalillness_paths_m) {
+    # Print the current exposure and outcome being processed
+    print(paste("Processing exposure:", exp_var, "with outcome file:", outcome_path))
+    
+    # Extract outcome file name for naming
+    outcome_name <- basename(outcome_path)
+    outcome_name <- sub("\\..*$", "", outcome_name)
+    
+    # Print to confirm the outcome name extraction
+    print(paste("Extracted outcome name:", outcome_name))
+    
+    # Try-Catch Block for error handling
+    tryCatch({
+      exposure_snps <- get(exp_var)$SNP
+      print(paste("Retrieved SNPs for exposure:", exp_var))
+      
+      outcome_data <- read_outcome_data(snps = exposure_snps, filename = outcome_path, sep = " ")
+      
+      output_var_name <- paste(exp_var, outcome_name, sep = "_")
+      results_HtoM_m[[output_var_name]] <- outcome_data
+      
+      print(paste("Processed exposure:", exp_var, "with outcome file:", outcome_path, "- saved as", output_var_name))
+    }, error = function(e) {
+      print(paste("Error in processing exposure:", exp_var, "with outcome file:", outcome_path, "- Error message:", e$message))
+    })
+  }
+}
+
+# Nested loop to process each combination of exposure and outcome
+for(exp_var in exposure_hormones_mf) {
+  for(outcome_path in outcome_mentalillness_paths_mf) {
+    # Print the current exposure and outcome being processed
+    print(paste("Processing exposure:", exp_var, "with outcome file:", outcome_path))
+    
+    # Extract outcome file name for naming
+    outcome_name <- basename(outcome_path)
+    outcome_name <- sub("\\..*$", "", outcome_name)
+    
+    # Print to confirm the outcome name extraction
+    print(paste("Extracted outcome name:", outcome_name))
+    
+    # Try-Catch Block for error handling
+    tryCatch({
+      exposure_snps <- get(exp_var)$SNP
+      print(paste("Retrieved SNPs for exposure:", exp_var))
+      
+      outcome_data <- read_outcome_data(snps = exposure_snps, filename = outcome_path, sep = " ")
+      
+      output_var_name <- paste(exp_var, outcome_name, sep = "_")
+      results_HtoM_mf[[output_var_name]] <- outcome_data
+      
+      print(paste("Processed exposure:", exp_var, "with outcome file:", outcome_path, "- saved as", output_var_name))
+    }, error = function(e) {
+      print(paste("Error in processing exposure:", exp_var, "with outcome file:", outcome_path, "- Error message:", e$message))
+    })
+  }
+}
+
+for(item_name in names(results_HtoM_f)) {
+  item <- results_HtoM_f[[item_name]]
+  cat(item_name, ": ", dim(item), "\n")
+}
+
+for(item_name in names(results_HtoM_m)) {
+  item <- results_HtoM_m[[item_name]]
+  cat(item_name, ": ", dim(item), "\n")
+}
+
+for(item_name in names(results_HtoM_mf)) {
+  item <- results_HtoM_mf[[item_name]]
+  cat(item_name, ": ", dim(item), "\n")
+}
+
+#-------------------Direction: Mental illness to sex hormones-------------------------#
+
+# Create an empty list to store results
+results_MtoH_f <- list()
+results_MtoH_m <- list()
+results_MtoH_mf <- list()
+
+# Nested loop to process each combination of exposure and outcome for females
+for(exp_var in exposure_mentalillness_f) {
+  for(outcome_path in outcome_hormones_paths_f) {
+    # Print the current exposure and outcome being processed
+    print(paste("Processing exposure:", exp_var, "with outcome file:", outcome_path))
+    
+    # Extract outcome file name for naming
+    outcome_name <- basename(outcome_path)
+    outcome_name <- sub("\\..*$", "", outcome_name)
+    
+    # Print to confirm the outcome name extraction
+    print(paste("Extracted outcome name:", outcome_name))
+    
+    # Try-Catch Block for error handling
+    tryCatch({
+      exposure_snps <- get(exp_var)$SNP
+      print(paste("Retrieved SNPs for exposure:", exp_var))
+      
+      outcome_data <- read_outcome_data(snps = exposure_snps, filename = outcome_path, sep = " ")
+      
+      output_var_name <- paste(exp_var, outcome_name, sep = "_")
+      results_MtoH_f[[output_var_name]] <- outcome_data
+      
+      print(paste("Processed exposure:", exp_var, "with outcome file:", outcome_path, "- saved as", output_var_name))
+    }, error = function(e) {
+      print(paste("Error in processing exposure:", exp_var, "with outcome file:", outcome_path, "- Error message:", e$message))
+    })
+  }
+}
+
+# Nested loop to process each combination of exposure and outcome for males
+for(exp_var in exposure_mentalillness_m) {
+  for(outcome_path in outcome_hormones_paths_m) {
+    # Print the current exposure and outcome being processed
+    print(paste("Processing exposure:", exp_var, "with outcome file:", outcome_path))
+    
+    # Extract outcome file name for naming
+    outcome_name <- basename(outcome_path)
+    outcome_name <- sub("\\..*$", "", outcome_name)
+    
+    # Print to confirm the outcome name extraction
+    print(paste("Extracted outcome name:", outcome_name))
+    
+    # Try-Catch Block for error handling
+    tryCatch({
+      exposure_snps <- get(exp_var)$SNP
+      print(paste("Retrieved SNPs for exposure:", exp_var))
+      
+      outcome_data <- read_outcome_data(snps = exposure_snps, filename = outcome_path, sep = " ")
+      
+      output_var_name <- paste(exp_var, outcome_name, sep = "_")
+      results_MtoH_m[[output_var_name]] <- outcome_data
+      
+      print(paste("Processed exposure:", exp_var, "with outcome file:", outcome_path, "- saved as", output_var_name))
+    }, error = function(e) {
+      print(paste("Error in processing exposure:", exp_var, "with outcome file:", outcome_path, "- Error message:", e$message))
+    })
+  }
+}
+
+# Nested loop to process each combination of exposure and outcome for both genders
+for(exp_var in exposure_mentalillness_mf) {
+  for(outcome_path in outcome_hormones_paths_mf) {
+    # Print the current exposure and outcome being processed
+    print(paste("Processing exposure:", exp_var, "with outcome file:", outcome_path))
+    
+    # Extract outcome file name for naming
+    outcome_name <- basename(outcome_path)
+    outcome_name <- sub("\\..*$", "", outcome_name)
+    
+    # Print to confirm the outcome name extraction
+    print(paste("Extracted outcome name:", outcome_name))
+    
+    # Try-Catch Block for error handling
+    tryCatch({
+      exposure_snps <- get(exp_var)$SNP
+      print(paste("Retrieved SNPs for exposure:", exp_var))
+      
+      outcome_data <- read_outcome_data(snps = exposure_snps, filename = outcome_path, sep = " ")
+      
+      output_var_name <- paste(exp_var, outcome_name, sep = "_")
+      results_MtoH_mf[[output_var_name]] <- outcome_data
+      
+      print(paste("Processed exposure:", exp_var, "with outcome file:", outcome_path, "- saved as", output_var_name))
+    }, error = function(e) {
+      print(paste("Error in processing exposure:", exp_var, "with outcome file:", outcome_path, "- Error message:", e$message))
+    })
+  }
+}
+
+# Print dimensions of the items in each results list
+for(item_name in names(results_MtoH_f)) {
+  item <- results_MtoH_f[[item_name]]
+  cat(item_name, ": ", dim(item), "\n")
+}
+
+for(item_name in names(results_MtoH_m)) {
+  item <- results_MtoH_m[[item_name]]
+  cat(item_name, ": ", dim(item), "\n")
+}
+
+for(item_name in names(results_MtoH_mf)) {
+  item <- results_MtoH_mf[[item_name]]
+  cat(item_name, ": ", dim(item), "\n")
+}
+
+```
+
+# STEP 3: Harmonise data-sets
+```{r Harmonise, echo=TRUE}
+
+# Harmonise the two data-sets so that the alleles are alligned right
+
+#-------------------Direction: Sex hormones to mental illness-------------------------#
+
+# Create empty lists to store harmonized results
+harmonized_results_HtoM_f <- list()
+harmonized_results_HtoM_m <- list()
+harmonized_results_HtoM_mf <- list()
+
+# Harmonization loop for female data
+for(exp_var in exposure_hormones_f) {
+  for(item_name in names(results_HtoM_f)) {
+    # Ensure that the outcome data corresponds to the current exposure variable
+    if(grepl(exp_var, item_name)) {
+      exposure_dat <- get(exp_var)
+      outcome_dat <- results_HtoM_f[[item_name]]
+      
+      harmonized_dat <- harmonise_data(exposure_dat = exposure_dat, outcome_dat = outcome_dat)
+      harmonized_results_HtoM_f[[item_name]] <- harmonized_dat
+      
+      print(paste("Harmonized:", item_name))
+    }
+  }
+}
+
+# Harmonization loop for male data
+for(exp_var in exposure_hormones_m) {
+  for(item_name in names(results_HtoM_m)) {
+    if(grepl(exp_var, item_name)) {
+      exposure_dat <- get(exp_var)
+      outcome_dat <- results_HtoM_m[[item_name]]
+      
+      harmonized_dat <- harmonise_data(exposure_dat = exposure_dat, outcome_dat = outcome_dat)
+      harmonized_results_HtoM_m[[item_name]] <- harmonized_dat
+      
+      print(paste("Harmonized:", item_name))
+    }
+  }
+}
+
+# Harmonization loop for mixed data
+for(exp_var in exposure_hormones_mf) {
+  for(item_name in names(results_HtoM_mf)) {
+    if(grepl(exp_var, item_name)) {
+      exposure_dat <- get(exp_var)
+      outcome_dat <- results_HtoM_mf[[item_name]]
+      
+      harmonized_dat <- harmonise_data(exposure_dat = exposure_dat, outcome_dat = outcome_dat)
+      harmonized_results_HtoM_mf[[item_name]] <- harmonized_dat
+      
+      print(paste("Harmonized:", item_name))
+    }
+  }
+}
+
+# Print dimensions of harmonized items where any mr_keep = TRUE for female data
+cat("Female Data Harmonized Dimensions where any mr_keep = TRUE:\n")
+for(item_name in names(harmonized_results_HtoM_f)) {
+  item <- harmonized_results_HtoM_f[[item_name]]
+  if(any(item$mr_keep == TRUE)) {
+    cat(item_name, ": ", dim(item), "\n")
+  }
+}
+
+# Print dimensions of harmonized items where any mr_keep = TRUE for male data
+cat("Male Data Harmonized Dimensions where any mr_keep = TRUE:\n")
+for(item_name in names(harmonized_results_HtoM_m)) {
+  item <- harmonized_results_HtoM_m[[item_name]]
+  if(any(item$mr_keep == TRUE)) {
+    cat(item_name, ": ", dim(item), "\n")
+  }
+}
+
+# Print dimensions of harmonized items where any mr_keep = TRUE for mixed data
+cat("Mixed Data Harmonized Dimensions where any mr_keep = TRUE:\n")
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  item <- harmonized_results_HtoM_mf[[item_name]]
+  if(any(item$mr_keep == TRUE)) {
+    cat(item_name, ": ", dim(item), "\n")
+  }
+}
+
+#-------------------Direction: Mental illness to sex hormones-------------------------#
+
+# Create empty lists to store harmonized results
+harmonized_results_MtoH_f <- list()
+harmonized_results_MtoH_m <- list()
+harmonized_results_MtoH_mf <- list()
+
+# Harmonization loop for female data
+for(exp_var in exposure_mentalillness_f) {
+  for(item_name in names(results_MtoH_f)) {
+    # Ensure that the outcome data corresponds to the current exposure variable
+    if(grepl(exp_var, item_name)) {
+      exposure_dat <- get(exp_var)
+      outcome_dat <- results_MtoH_f[[item_name]]
+      
+      harmonized_dat <- harmonise_data(exposure_dat = exposure_dat, outcome_dat = outcome_dat)
+      harmonized_results_MtoH_f[[item_name]] <- harmonized_dat
+      
+      print(paste("Harmonized:", item_name))
+    }
+  }
+}
+
+# Harmonization loop for male data
+for(exp_var in exposure_mentalillness_m) {
+  for(item_name in names(results_MtoH_m)) {
+    if(grepl(exp_var, item_name)) {
+      exposure_dat <- get(exp_var)
+      outcome_dat <- results_MtoH_m[[item_name]]
+      
+      harmonized_dat <- harmonise_data(exposure_dat = exposure_dat, outcome_dat = outcome_dat)
+      harmonized_results_MtoH_m[[item_name]] <- harmonized_dat
+      
+      print(paste("Harmonized:", item_name))
+    }
+  }
+}
+
+# Harmonization loop for mixed data
+for(exp_var in exposure_mentalillness_mf) {
+  for(item_name in names(results_MtoH_mf)) {
+    if(grepl(exp_var, item_name)) {
+      exposure_dat <- get(exp_var)
+      outcome_dat <- results_MtoH_mf[[item_name]]
+      
+      harmonized_dat <- harmonise_data(exposure_dat = exposure_dat, outcome_dat = outcome_dat)
+      harmonized_results_MtoH_mf[[item_name]] <- harmonized_dat
+      
+      print(paste("Harmonized:", item_name))
+    }
+  }
+}
+
+# Print dimensions of harmonized items where any mr_keep = TRUE for female data
+cat("Female Data Harmonized Dimensions where any mr_keep = TRUE:\n")
+for(item_name in names(harmonized_results_MtoH_f)) {
+  item <- harmonized_results_MtoH_f[[item_name]]
+  if(any(item$mr_keep == TRUE)) {
+    cat(item_name, ": ", dim(item), "\n")
+  }
+}
+
+# Print dimensions of harmonized items where any mr_keep = TRUE for male data
+cat("Male Data Harmonized Dimensions where any mr_keep = TRUE:\n")
+for(item_name in names(harmonized_results_MtoH_m)) {
+  item <- harmonized_results_MtoH_m[[item_name]]
+  if(any(item$mr_keep == TRUE)) {
+    cat(item_name, ": ", dim(item), "\n")
+  }
+}
+
+# Print dimensions of harmonized items where any mr_keep = TRUE for mixed data
+cat("Mixed Data Harmonized Dimensions where any mr_keep = TRUE:\n")
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  item <- harmonized_results_MtoH_mf[[item_name]]
+  if(any(item$mr_keep == TRUE)) {
+    cat(item_name, ": ", dim(item), "\n")
+  }
+}
+```
+
+
+# STEP 4: Run MR analyses
+```{r Run MR}
+
+# Run your MR analysis and all appropriate sensitivity analyses
+
+# This will give you the results of the main MR analysis (IVW) and the most important sensitivity analyses 
+# (weighted median, weighed mode, MR-Egger)
+
+# With this command you can edit the output of the main MR analyses, choose the right sensitivity methods
+# Select IVW, Weighted median, Weighted mode, MR Egger
+
+# trace(mr_method_list, edit=TRUE)
+
+#-------------------Direction: Sex hormones to mental illness-------------------------#
+
+# Create empty lists to store MR results
+mr_results_HtoM_f <- list()
+mr_results_HtoM_m <- list()
+mr_results_HtoM_mf <- list()
+
+# MR analysis loop for female data
+for(item_name in names(harmonized_results_HtoM_f)) {
+  mr_dat <- mr(harmonized_results_HtoM_f[[item_name]])
+  mr_results_HtoM_f[[item_name]] <- mr_dat
+  print(paste("MR analysis completed for:", item_name))
+}
+
+# MR analysis loop for male data
+for(item_name in names(harmonized_results_HtoM_m)) {
+  mr_dat <- mr(harmonized_results_HtoM_m[[item_name]])
+  mr_results_HtoM_m[[item_name]] <- mr_dat
+  print(paste("MR analysis completed for:", item_name))
+}
+
+# MR analysis loop for mixed data
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  mr_dat <- mr(harmonized_results_HtoM_mf[[item_name]])
+  mr_results_HtoM_mf[[item_name]] <- mr_dat
+  print(paste("MR analysis completed for:", item_name))
+}
+
+# Check which lists contain items of only 1 row and save dataframes
+single_row_HtoM_f <- names(mr_results_HtoM_f)[sapply(mr_results_HtoM_f, function(df) nrow(df) == 1)]
+mr_results_HtoM_f_single <- mr_results_HtoM_f[single_row_HtoM_f]
+mr_results_HtoM_f_single_df <- bind_rows(mr_results_HtoM_f_single, .id = "source")
+single_row_HtoM_m <- names(mr_results_HtoM_m)[sapply(mr_results_HtoM_m, function(df) nrow(df) == 1)]
+# Zero items 
+#mr_results_HtoM_m_single <- mr_results_HtoM_m[single_row_HtoM_m]
+#mr_results_HtoM_m_single_df <- bind_rows(mr_results_HtoM_m_single, .id = "source")
+single_row_HtoM_mf <- names(mr_results_HtoM_mf)[sapply(mr_results_HtoM_mf, function(df) nrow(df) == 1)]
+# Zero items
+#mr_results_HtoM_mf_single <- mr_results_HtoM_mf[single_row_HtoM_mf]
+#mr_results_HtoM_mf_single_df <- bind_rows(mr_results_HtoM_mf_single, .id = "source")
+
+# Function to combine MR results into one data frame and write to an Excel file for items with at least 2 rows
+# These are all relations that contain IVW, Weighted median, Weighted mode, and Egger
+write_combined_mr_results_to_excel <- function(mr_results, file_name) {
+  if(length(mr_results) > 0) {
+    # Combine all data frames in the list into one data frame
+    combined_results <- ldply(names(mr_results), function(x) {
+      data.frame(ItemName = x, mr_results[[x]])
+    }, .id = NULL)
+    
+    # Check if the combined data frame has at least 2 rows
+    if(nrow(combined_results) >= 2) {
+      # Write the combined data frame to an Excel file
+      write.xlsx(combined_results, file_name, row.names = FALSE)
+      cat("Combined MR results written to:", file_name, "\n")
+    } else {
+      cat("The combined results have less than 2 rows. No file written for", file_name, "\n")
+    }
+  } else {
+    cat("No data to write for", file_name, "\n")
+  }
+}
+
+# Write combined MR results for female, male, and mixed data to separate Excel files
+write_combined_mr_results_to_excel(mr_results_HtoM_f, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_HtoM_f.xlsx")
+write_combined_mr_results_to_excel(mr_results_HtoM_m, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_HtoM_m.xlsx")
+write_combined_mr_results_to_excel(mr_results_HtoM_mf, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_HtoM_mf.xlsx")
+
+# Write the combined data frame to an Excel file
+# Replace 'output_file.xlsx' with your desired file name and path
+write.xlsx(mr_results_HtoM_f_single_df, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_HtoM_f_single.xlsx", row.names = FALSE)
+#write.xlsx(mr_results_HtoM_m_single_df, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_HtoM_m_single.xlsx", row.names = FALSE)
+#write.xlsx(mr_results_HtoM_mf_single_df, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_HtoM_mf_single.xlsx", row.names = FALSE)
+
+#-------------------Direction: Mental illness to sex hormones-------------------------#
+
+# Create empty lists to store MR results
+mr_results_MtoH_f <- list()
+mr_results_MtoH_m <- list()
+mr_results_MtoH_mf <- list()
+
+# MR analysis loop for female data
+for(item_name in names(harmonized_results_MtoH_f)) {
+  mr_dat <- mr(harmonized_results_MtoH_f[[item_name]])
+  mr_results_MtoH_f[[item_name]] <- mr_dat
+  print(paste("MR analysis completed for:", item_name))
+}
+
+# MR analysis loop for male data
+for(item_name in names(harmonized_results_MtoH_m)) {
+  mr_dat <- mr(harmonized_results_MtoH_m[[item_name]])
+  mr_results_MtoH_m[[item_name]] <- mr_dat
+  print(paste("MR analysis completed for:", item_name))
+}
+
+# MR analysis loop for mixed data
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  mr_dat <- mr(harmonized_results_MtoH_mf[[item_name]])
+  mr_results_MtoH_mf[[item_name]] <- mr_dat
+  print(paste("MR analysis completed for:", item_name))
+}
+
+# Check which lists contain items of only 1 row and save dataframes
+single_row_MtoH_f <- names(mr_results_MtoH_f)[sapply(mr_results_MtoH_f, function(df) nrow(df) == 1)]
+mr_results_MtoH_f_single <- mr_results_MtoH_f[single_row_MtoH_f]
+mr_results_MtoH_f_single_df <- bind_rows(mr_results_MtoH_f_single, .id = "source")
+single_row_MtoH_m <- names(mr_results_MtoH_m)[sapply(mr_results_MtoH_m, function(df) nrow(df) == 1)]
+mr_results_MtoH_m_single <- mr_results_MtoH_m[single_row_MtoH_m]
+mr_results_MtoH_m_single_df <- bind_rows(mr_results_MtoH_m_single, .id = "source")
+single_row_MtoH_mf <- names(mr_results_MtoH_mf)[sapply(mr_results_MtoH_mf, function(df) nrow(df) == 1)]
+mr_results_MtoH_mf_single <- mr_results_MtoH_mf[single_row_MtoH_mf]
+mr_results_MtoH_mf_single_df <- bind_rows(mr_results_MtoH_mf_single, .id = "source")
+
+# Function to combine MR results into one data frame and write to an Excel file for items with at least 2 rows
+# These are all relations that contain IVW, Weighted median, Weighted mode, and Egger
+write_combined_mr_results_to_excel <- function(mr_results, file_name) {
+  if(length(mr_results) > 0) {
+    # Combine all data frames in the list into one data frame
+    combined_results <- ldply(names(mr_results), function(x) {
+      data.frame(ItemName = x, mr_results[[x]])
+    }, .id = NULL)
+    
+    # Check if the combined data frame has at least 2 rows
+    if(nrow(combined_results) >= 2) {
+      # Write the combined data frame to an Excel file
+      write.xlsx(combined_results, file_name, row.names = FALSE)
+      cat("Combined MR results written to:", file_name, "\n")
+    } else {
+      cat("The combined results have less than 2 rows. No file written for", file_name, "\n")
+    }
+  } else {
+    cat("No data to write for", file_name, "\n")
+  }
+}
+
+# Write combined MR results for female, male, and mixed data to separate Excel files
+#write_combined_mr_results_to_excel(mr_results_MtoH_f, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_f.xlsx")
+write_combined_mr_results_to_excel_MtoH_f <- function(mr_results, file_name) {
+  if(length(mr_results) > 0) {
+    combined_results <- do.call("rbind", lapply(names(mr_results), function(x) {
+      df <- mr_results[[x]]
+      if(nrow(df) > 0) {
+        df$ItemName <- x
+        return(df)
+      } else {
+        return(NULL)
+      }
+    }))
+    
+    if(!is.null(combined_results) && nrow(combined_results) >= 2) {
+      write.xlsx(combined_results, file_name, row.names = FALSE)
+      cat("Combined MR results written to:", file_name, "\n")
+    } else {
+      cat("The combined results have less than 2 rows. No file written for", file_name, "\n")
+    }
+  } else {
+    cat("No data to write for", file_name, "\n")
+  }
+}
+write_combined_mr_results_to_excel_MtoH_f(mr_results_MtoH_f, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_f.xlsx")
+write_combined_mr_results_to_excel(mr_results_MtoH_m, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_m.xlsx")
+write_combined_mr_results_to_excel(mr_results_MtoH_mf, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_mf.xlsx")
+
+# Write the combined data frame to an Excel file
+write.xlsx(mr_results_MtoH_f_single_df, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_f_single.xlsx", row.names = FALSE)
+write.xlsx(mr_results_MtoH_m_single_df, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_m_single.xlsx", row.names = FALSE)
+write.xlsx(mr_results_MtoH_mf_single_df, "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/mr_results_MtoH_mf_single.xlsx", row.names = FALSE)
+
+# ALWAYS make a scatter plot which gives you a visual idea of the SNP effects
+
+#-------------------Direction: Sex hormones to mental illness-------------------------#
+
+# Creating empty lists to store the plots
+plots_HtoM_f <- list()
+plots_HtoM_m <- list()
+plots_HtoM_mf <- list()
+
+# Loop for female data
+for(item_name in names(mr_results_HtoM_f)) {
+  plot <- mr_scatter_plot(mr_results_HtoM_f[[item_name]], harmonized_results_HtoM_f[[item_name]])
+  plots_HtoM_f[[item_name]] <- plot[[1]]
+}
+
+# Loop for male data
+for(item_name in names(mr_results_HtoM_m)) {
+  plot <- mr_scatter_plot(mr_results_HtoM_m[[item_name]], harmonized_results_HtoM_m[[item_name]])
+  plots_HtoM_m[[item_name]] <- plot[[1]]
+}
+
+# Loop for mixed data
+for(item_name in names(mr_results_HtoM_mf)) {
+  plot <- mr_scatter_plot(mr_results_HtoM_mf[[item_name]], harmonized_results_HtoM_mf[[item_name]])
+  plots_HtoM_mf[[item_name]] <- plot[[1]]
+}
+
+# Directory where the plots will be saved 
+save_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/Scatterplots/"
+
+# Save the plots for female data
+for(item_name in names(mr_results_HtoM_f)) {
+  file_path <- paste0(save_dir, "plot_HtoM_f_", item_name, ".png")
+  ggsave(file_path, plot = plots_HtoM_f[[item_name]])
+}
+
+# Save the plots for male data
+for(item_name in names(mr_results_HtoM_m)) {
+  file_path <- paste0(save_dir, "plot_HtoM_m_", item_name, ".png")
+  ggsave(file_path, plot = plots_HtoM_m[[item_name]])
+}
+
+# Save the plots for mixed data
+for(item_name in names(mr_results_HtoM_mf)) {
+  file_path <- paste0(save_dir, "plot_HtoM_mf_", item_name, ".png")
+  ggsave(file_path, plot = plots_HtoM_mf[[item_name]])
+}
+
+#-------------------Direction: Mental illness to sex hormones-------------------------#
+
+# Creating empty lists to store the plots
+plots_MtoH_f <- list()
+plots_MtoH_m <- list()
+plots_MtoH_mf <- list()
+
+# Loop for female data
+for(item_name in names(mr_results_MtoH_f)) {
+  plot <- mr_scatter_plot(mr_results_MtoH_f[[item_name]], harmonized_results_MtoH_f[[item_name]])
+  plots_MtoH_f[[item_name]] <- plot[[1]]
+}
+
+# Loop for male data
+for(item_name in names(mr_results_MtoH_m)) {
+  plot <- mr_scatter_plot(mr_results_MtoH_m[[item_name]], harmonized_results_MtoH_m[[item_name]])
+  plots_MtoH_m[[item_name]] <- plot[[1]]
+}
+
+# Loop for mixed data
+for(item_name in names(mr_results_MtoH_mf)) {
+  plot <- mr_scatter_plot(mr_results_MtoH_mf[[item_name]], harmonized_results_MtoH_mf[[item_name]])
+  plots_MtoH_mf[[item_name]] <- plot[[1]]
+}
+
+# Directory where the plots will be saved 
+save_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Main_analyses/Scatterplots/"
+
+# Save the plots for female data
+for(item_name in names(mr_results_MtoH_f)) {
+  file_path <- paste0(save_dir, "plot_MtoH_f_", item_name, ".png")
+  ggsave(file_path, plot = plots_MtoH_f[[item_name]])
+}
+
+# Save the plots for male data
+for(item_name in names(mr_results_MtoH_m)) {
+  file_path <- paste0(save_dir, "plot_MtoH_m_", item_name, ".png")
+  ggsave(file_path, plot = plots_MtoH_m[[item_name]])
+}
+
+# Save the plots for mixed data
+for(item_name in names(mr_results_MtoH_mf)) {
+  file_path <- paste0(save_dir, "plot_MtoH_mf_", item_name, ".png")
+  ggsave(file_path, plot = plots_MtoH_mf[[item_name]])
+}
+```
+
+# LOAD ENVIRONMENT
+```{r}
+#load("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Scripts/R/Environment/SMI_Hormones_Basic_MR_Input_20240514.RData")
+```
+
+
+# STEP 5: Run other (sensitivity) methods: Egger, Q, F, I statistic
+```{r}
+#-------------------Direction: Sex hormones to mental illness-------------------------#
+
+# Directory paths for saving the results
+egger_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Egger/"
+q_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Q/"
+
+# Loop for female data
+for(item_name in names(harmonized_results_HtoM_f)) {
+  # Apply Egger intercept test
+  egger_result <- mr_pleiotropy_test(harmonized_results_HtoM_f[[item_name]])
+  # Save Egger test result to Excel
+  write_xlsx(egger_result, paste0(egger_dir, item_name, "_Egger.xlsx"))
+  
+  # Apply Cochran's Q test
+  q_result <- mr_heterogeneity(harmonized_results_HtoM_f[[item_name]])
+  # Save Q test result to Excel
+  write_xlsx(q_result, paste0(q_dir, item_name, "_Q.xlsx"))
+}
+
+# Loop for male data
+for(item_name in names(harmonized_results_HtoM_m)) {
+  # Apply Egger intercept test
+  egger_result <- mr_pleiotropy_test(harmonized_results_HtoM_m[[item_name]])
+  # Save Egger test result to Excel
+  write_xlsx(egger_result, paste0(egger_dir, item_name, "_Egger.xlsx"))
+  
+  # Apply Cochran's Q test
+  q_result <- mr_heterogeneity(harmonized_results_HtoM_m[[item_name]])
+  # Save Q test result to Excel
+  write_xlsx(q_result, paste0(q_dir, item_name, "_Q.xlsx"))
+}
+
+# Loop for mixed gender data
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  # Apply Egger intercept test
+  egger_result <- mr_pleiotropy_test(harmonized_results_HtoM_mf[[item_name]])
+  # Save Egger test result to Excel
+  write_xlsx(egger_result, paste0(egger_dir, item_name, "_Egger.xlsx"))
+  
+  # Apply Cochran's Q test
+  q_result <- mr_heterogeneity(harmonized_results_HtoM_mf[[item_name]])
+  # Save Q test result to Excel
+  write_xlsx(q_result, paste0(q_dir, item_name, "_Q.xlsx"))
+}
+
+# F statistic which tells you something about the instrument strength
+# (when F > 10 then your instrument has sufficient strength)
+
+# Function to calculate mean F statistic
+calculate_mean_F <- function(item_data) {
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure
+  BXG <- abs(BetaXG)         
+  F <- BXG^2 / seBetaXG^2
+  mean(F)
+}
+
+# Directory path for saving the F statistics
+f_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/F/"
+
+# Initializing lists to store mean F statistics for each dataset
+mF_HtoM_f <- list()
+mF_HtoM_m <- list()
+mF_HtoM_mf <- list()
+
+# Loop for female data
+for(item_name in names(harmonized_results_HtoM_f)) {
+  item_data <- harmonized_results_HtoM_f[[item_name]]
+  mF_HtoM_f[[item_name]] <- calculate_mean_F(item_data)
+}
+
+# Loop for male data
+for(item_name in names(harmonized_results_HtoM_m)) {
+  item_data <- harmonized_results_HtoM_m[[item_name]]
+  mF_HtoM_m[[item_name]] <- calculate_mean_F(item_data)
+}
+
+# Loop for mixed gender data
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  item_data <- harmonized_results_HtoM_mf[[item_name]]
+  mF_HtoM_mf[[item_name]] <- calculate_mean_F(item_data)
+}
+
+# Convert the lists of mean F statistics to data frames
+mF_HtoM_f_df <- data.frame(Item = names(mF_HtoM_f), MeanF = unlist(mF_HtoM_f))
+mF_HtoM_m_df <- data.frame(Item = names(mF_HtoM_m), MeanF = unlist(mF_HtoM_m))
+mF_HtoM_mf_df <- data.frame(Item = names(mF_HtoM_mf), MeanF = unlist(mF_HtoM_mf))
+
+# Save the mean F statistics data frames to Excel files
+write_xlsx(mF_HtoM_f_df, paste0(f_dir, "mF_HtoM_f.xlsx"))
+write_xlsx(mF_HtoM_m_df, paste0(f_dir, "mF_HtoM_m.xlsx"))
+write_xlsx(mF_HtoM_mf_df, paste0(f_dir, "mF_HtoM_mf.xlsx"))
+
+# I-squared value which tells you whether or not the results of MR-Egger
+# are reliable. When I-squared is >=0.9, then MR-Egger is reliable, when I-squared
+# is 0.6-0.9 then MR-Egger is only reliable if the SIMEX correction is applied,
+# when I-squared is <0.6 then MR-Egger is not reliable
+
+# The below script for Isquared is based on supplementary materials of Bowden et al. (2016) 
+# and was originally writen by Robyn Wootton - 07.03.2018
+# Define the Isq function
+Isq <- function(y, s) {
+  k <- length(y)
+  w <- 1 / s^2
+  sum.w <- sum(w)
+  mu.hat <- sum(y * w) / sum.w
+  Q <- sum(w * (y - mu.hat)^2)
+  Isq <- (Q - (k - 1)) / Q
+  Isq <- max(0, Isq)
+  return(Isq)
+}
+
+# Initialize lists to store Isq values
+Isq_unweighted_HtoM_f <- list()
+Isq_weighted_HtoM_f <- list()
+Isq_unweighted_HtoM_m <- list()
+Isq_weighted_HtoM_m <- list()
+Isq_unweighted_HtoM_mf <- list()
+Isq_weighted_HtoM_mf <- list()
+
+# Loop through each item in the list
+for(item_name in names(harmonized_results_HtoM_f)) {
+  item_data <- harmonized_results_HtoM_f[[item_name]]
+  
+  # Extract relevant data
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure 
+  seBetaYG <- item_data$se.outcome
+  BXG <- abs(BetaXG)
+  
+  # Calculate unweighted and weighted Isq
+  Isq_unweighted <- Isq(BXG, seBetaXG) 
+  Isq_weighted <- Isq((BXG / seBetaYG), (seBetaXG / seBetaYG))
+  
+  # Store the Isq values in the lists
+  Isq_unweighted_HtoM_f[[item_name]] <- Isq_unweighted
+  Isq_weighted_HtoM_f[[item_name]] <- Isq_weighted
+}
+
+
+# Loop through each item in the list
+for(item_name in names(harmonized_results_HtoM_m)) {
+  item_data <- harmonized_results_HtoM_m[[item_name]]
+  
+  # Extract relevant data
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure 
+  seBetaYG <- item_data$se.outcome
+  BXG <- abs(BetaXG)
+  
+  # Calculate unweighted and weighted Isq
+  Isq_unweighted <- Isq(BXG, seBetaXG) 
+  Isq_weighted <- Isq((BXG / seBetaYG), (seBetaXG / seBetaYG))
+  
+  # Store the Isq values in the lists
+  Isq_unweighted_HtoM_m[[item_name]] <- Isq_unweighted
+  Isq_weighted_HtoM_m[[item_name]] <- Isq_weighted
+}
+
+# Loop through each item in the list
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  item_data <- harmonized_results_HtoM_mf[[item_name]]
+  
+  # Extract relevant data
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure 
+  seBetaYG <- item_data$se.outcome
+  BXG <- abs(BetaXG)
+  
+  # Calculate unweighted and weighted Isq
+  Isq_unweighted <- Isq(BXG, seBetaXG) 
+  Isq_weighted <- Isq((BXG / seBetaYG), (seBetaXG / seBetaYG))
+  
+  # Store the Isq values in the lists
+  Isq_unweighted_HtoM_mf[[item_name]] <- Isq_unweighted
+  Isq_weighted_HtoM_mf[[item_name]] <- Isq_weighted
+}
+
+# Convert the lists of Isquared to data frames
+IsqU_HtoM_f_df <- data.frame(Item = names(Isq_unweighted_HtoM_f), IsqU = unlist(Isq_unweighted_HtoM_f))
+IsqU_HtoM_m_df <- data.frame(Item = names(Isq_unweighted_HtoM_m), IsqU = unlist(Isq_unweighted_HtoM_m))
+IsqU_HtoM_mf_df <- data.frame(Item = names(Isq_unweighted_HtoM_mf), IsqU = unlist(Isq_unweighted_HtoM_mf))
+IsqW_HtoM_f_df <- data.frame(Item = names(Isq_weighted_HtoM_f), IsqW = unlist(Isq_weighted_HtoM_f))
+IsqW_HtoM_m_df <- data.frame(Item = names(Isq_weighted_HtoM_m), IsqW = unlist(Isq_weighted_HtoM_m))
+IsqW_HtoM_mf_df <- data.frame(Item = names(Isq_weighted_HtoM_mf), IsqW = unlist(Isq_weighted_HtoM_mf))
+
+# Merge weighted and unweighted
+Isq_HtoM_f_df <- full_join(IsqU_HtoM_f_df, IsqW_HtoM_f_df, by="Item")
+Isq_HtoM_m_df <- full_join(IsqU_HtoM_m_df, IsqW_HtoM_m_df, by="Item")
+Isq_HtoM_mf_df <- full_join(IsqU_HtoM_mf_df, IsqW_HtoM_mf_df, by="Item")
+
+# Save the Isquared data frames to Excel files
+I_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Isquared/"
+write_xlsx(Isq_HtoM_f_df, paste0(I_dir, "Isq_HtoM_f_df.xlsx"))
+write_xlsx(Isq_HtoM_m_df, paste0(I_dir, "Isq_HtoM_m_df.xlsx"))
+write_xlsx(Isq_HtoM_mf_df, paste0(I_dir, "Isq_HtoM_mf_df.xlsx"))
+
+# when I-squared is 0.6-0.9, then apply SIMEX correction as below
+# Isquared is between 0.6-0.9 for AgeMc 
+
+AgeMc_Depr <- harmonized_results_HtoM_f$agemc_exp_dat_DeprB_f_oc
+AgeMc_Bip <- harmonized_results_HtoM_f$agemc_exp_dat_Bip_f_oc
+AgeMc_SCZ <- harmonized_results_HtoM_f$agemc_exp_dat_SCZ_f_oc
+SCZ_T_mf <- harmonized_results_MtoH_mf$schiz_mf_exp_dat_T_mf_oc
+SCZ_SHBG_mf <- harmonized_results_MtoH_mf$schiz_mf_exp_dat_SHBG_mf_oc
+
+# AgeMc_Depr
+AgeMc_Depr$BetaXG<-AgeMc_Depr$beta.exposure
+AgeMc_Depr$seBetaXG<-AgeMc_Depr$se.exposure
+AgeMc_Depr$BetaYG<-AgeMc_Depr$beta.outcome
+AgeMc_Depr$seBetaYG<-AgeMc_Depr$se.outcome
+BetaXG <- AgeMc_Depr$BetaXG
+BetaYG <- AgeMc_Depr$BetaYG
+seBetaXG <- AgeMc_Depr$seBetaXG
+seBetaYG <- AgeMc_Depr$seBetaYG
+
+#Ensure all estimates are positive
+BYG <- BetaYG*sign(BetaXG)
+BXG <- abs(BetaXG)  
+
+# MR-Egger regression (weighted) --> choose either this one or the unweighted depending on I-squared value
+Fit1 <- lm(BYG ~ BXG,weights=1/seBetaYG^2,x=TRUE,y=TRUE)
+
+# MR-Egger regression (unweighted) --> choose either this one or the weighted depending on I-squared value
+#Fit2 <- lm(BYG~BXG,x=TRUE,y=TRUE)
+
+# Simulation extrapolation 
+mod.sim1 <- simex(Fit1,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+#mod.sim2 <- simex(Fit2,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+mod1_AgeDepr <-summary(mod.sim1)
+#mod2<-summary(mod.sim2)
+
+# weighted
+mod1_AgeDepr
+# unweighted
+#mod2
+
+# AgeMc_Bip
+AgeMc_Bip$BetaXG<-AgeMc_Bip$beta.exposure
+AgeMc_Bip$seBetaXG<-AgeMc_Bip$se.exposure
+AgeMc_Bip$BetaYG<-AgeMc_Bip$beta.outcome
+AgeMc_Bip$seBetaYG<-AgeMc_Bip$se.outcome
+BetaXG <- AgeMc_Bip$BetaXG
+BetaYG <- AgeMc_Bip$BetaYG
+seBetaXG <- AgeMc_Bip$seBetaXG
+seBetaYG <- AgeMc_Bip$seBetaYG
+
+#Ensure all estimates are positive
+BYG <- BetaYG*sign(BetaXG)
+BXG <- abs(BetaXG)  
+
+# MR-Egger regression (weighted) --> choose either this one or the unweighted depending on I-squared value
+Fit1 <- lm(BYG ~ BXG,weights=1/seBetaYG^2,x=TRUE,y=TRUE)
+
+# MR-Egger regression (unweighted) --> choose either this one or the weighted depending on I-squared value
+#Fit2 <- lm(BYG~BXG,x=TRUE,y=TRUE)
+
+# Simulation extrapolation 
+mod.sim1 <- simex(Fit1,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+#mod.sim2 <- simex(Fit2,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+mod1_AgeBip <-summary(mod.sim1)
+#mod2<-summary(mod.sim2)
+
+# weighted
+mod1_AgeBip 
+# unweighted
+#mod2
+
+# AgeMc_SCZ
+AgeMc_SCZ$BetaXG<-AgeMc_SCZ$beta.exposure
+AgeMc_SCZ$seBetaXG<-AgeMc_SCZ$se.exposure
+AgeMc_SCZ$BetaYG<-AgeMc_SCZ$beta.outcome
+AgeMc_SCZ$seBetaYG<-AgeMc_SCZ$se.outcome
+BetaXG <- AgeMc_SCZ$BetaXG
+BetaYG <- AgeMc_SCZ$BetaYG
+seBetaXG <- AgeMc_SCZ$seBetaXG
+seBetaYG <- AgeMc_SCZ$seBetaYG
+
+#Ensure all estimates are positive
+BYG <- BetaYG*sign(BetaXG)
+BXG <- abs(BetaXG)  
+
+# MR-Egger regression (weighted) --> choose either this one or the unweighted depending on I-squared value
+#Fit1 <- lm(BYG ~ BXG,weights=1/seBetaYG^2,x=TRUE,y=TRUE)
+
+# MR-Egger regression (unweighted) --> choose either this one or the weighted depending on I-squared value
+Fit2 <- lm(BYG~BXG,x=TRUE,y=TRUE)
+
+# Simulation extrapolation 
+#mod.sim1 <- simex(Fit1,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+mod.sim2 <- simex(Fit2,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+#mod1<-summary(mod.sim1)
+mod2_AgeSCZ <-summary(mod.sim2)
+
+# weighted
+# mod1 
+# unweighted
+mod2_AgeSCZ
+
+# SCZ_T_mf
+SCZ_T_mf$BetaXG<-SCZ_T_mf$beta.exposure
+SCZ_T_mf$seBetaXG<-SCZ_T_mf$se.exposure
+SCZ_T_mf$BetaYG<-SCZ_T_mf$beta.outcome
+SCZ_T_mf$seBetaYG<-SCZ_T_mf$se.outcome
+BetaXG <- SCZ_T_mf$BetaXG
+BetaYG <- SCZ_T_mf$BetaYG
+seBetaXG <- SCZ_T_mf$seBetaXG
+seBetaYG <- SCZ_T_mf$seBetaYG
+
+#Ensure all estimates are positive
+BYG <- BetaYG*sign(BetaXG)
+BXG <- abs(BetaXG)  
+
+# MR-Egger regression (weighted) --> choose either this one or the unweighted depending on I-squared value
+#Fit1 <- lm(BYG ~ BXG,weights=1/seBetaYG^2,x=TRUE,y=TRUE)
+
+# MR-Egger regression (unweighted) --> choose either this one or the weighted depending on I-squared value
+Fit2 <- lm(BYG~BXG,x=TRUE,y=TRUE)
+
+# Simulation extrapolation 
+#mod.sim1 <- simex(Fit1,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+mod.sim2 <- simex(Fit2,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+#mod1<-summary(mod.sim1)
+mod2_SCZ_T <-summary(mod.sim2)
+
+# weighted
+# mod1 
+# unweighted
+mod2_SCZ_T
+
+# SCZ_SHBG_mf
+SCZ_SHBG_mf$BetaXG<-SCZ_SHBG_mf$beta.exposure
+SCZ_SHBG_mf$seBetaXG<-SCZ_SHBG_mf$se.exposure
+SCZ_SHBG_mf$BetaYG<-SCZ_SHBG_mf$beta.outcome
+SCZ_SHBG_mf$seBetaYG<-SCZ_SHBG_mf$se.outcome
+BetaXG <- SCZ_SHBG_mf$BetaXG
+BetaYG <- SCZ_SHBG_mf$BetaYG
+seBetaXG <- SCZ_SHBG_mf$seBetaXG
+seBetaYG <- SCZ_SHBG_mf$seBetaYG
+
+#Ensure all estimates are positive
+BYG <- BetaYG*sign(BetaXG)
+BXG <- abs(BetaXG)  
+
+# MR-Egger regression (weighted) --> choose either this one or the unweighted depending on I-squared value
+#Fit1 <- lm(BYG ~ BXG,weights=1/seBetaYG^2,x=TRUE,y=TRUE)
+
+# MR-Egger regression (unweighted) --> choose either this one or the weighted depending on I-squared value
+Fit2 <- lm(BYG~BXG,x=TRUE,y=TRUE)
+
+# Simulation extrapolation 
+#mod.sim1 <- simex(Fit1,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+mod.sim2 <- simex(Fit2,B=10000, measurement.error = seBetaXG, SIMEXvariable="BXG",fitting.method ="quad",asymptotic="FALSE") 
+#mod1<-summary(mod.sim1)
+mod2_SCZ_SHBG <-summary(mod.sim2)
+
+# weighted
+# mod1 
+# unweighted
+mod2_SCZ_SHBG
+
+
+# Leave one out analysis which tells you whether your main effect is driven by 
+# any particular single SNP
+loo_plot_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/LeaveOneOutPlots/"
+
+# Function to perform leave-one-out analysis and save plot
+perform_loo_analysis <- function(item_data, item_name, plot_dir) {
+  # Perform leave-one-out analysis
+  res_loo <- mr_leaveoneout(item_data)
+  
+  # Generate plot for leave-one-out analysis
+  pl_loo <- mr_leaveoneout_plot(res_loo)
+  
+  # Save the first plot of the list
+  ggsave(paste0(plot_dir, item_name, "_loo_plot.png"), plot = pl_loo[[1]])
+}
+
+# Loop for female data
+for(item_name in names(harmonized_results_HtoM_f)) {
+  perform_loo_analysis(harmonized_results_HtoM_f[[item_name]], item_name, loo_plot_dir)
+}
+
+# Loop for male data
+for(item_name in names(harmonized_results_HtoM_m)) {
+  perform_loo_analysis(harmonized_results_HtoM_m[[item_name]], item_name, loo_plot_dir)
+}
+
+# Loop for mixed gender data
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  perform_loo_analysis(harmonized_results_HtoM_mf[[item_name]], item_name, loo_plot_dir)
+}
+
+#-------------------Direction: Mental illness to sex hormones-------------------------#
+
+# Directory paths for saving the results
+egger_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Egger/"
+q_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Q/"
+
+# Loop for female data
+for(item_name in names(harmonized_results_MtoH_f)) {
+  # Apply Egger intercept test
+  egger_result <- mr_pleiotropy_test(harmonized_results_MtoH_f[[item_name]])
+  # Save Egger test result to Excel
+  write_xlsx(egger_result, paste0(egger_dir, item_name, "_Egger.xlsx"))
+  
+  # Apply Cochran's Q test
+  q_result <- mr_heterogeneity(harmonized_results_MtoH_f[[item_name]])
+  # Save Q test result to Excel
+  write_xlsx(q_result, paste0(q_dir, item_name, "_Q.xlsx"))
+}
+
+# Loop for male data
+for(item_name in names(harmonized_results_MtoH_m)) {
+  # Apply Egger intercept test
+  egger_result <- mr_pleiotropy_test(harmonized_results_MtoH_m[[item_name]])
+  # Save Egger test result to Excel
+  write_xlsx(egger_result, paste0(egger_dir, item_name, "_Egger.xlsx"))
+  
+  # Apply Cochran's Q test
+  q_result <- mr_heterogeneity(harmonized_results_MtoH_m[[item_name]])
+  # Save Q test result to Excel
+  write_xlsx(q_result, paste0(q_dir, item_name, "_Q.xlsx"))
+}
+
+# Loop for mixed gender data
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  # Apply Egger intercept test
+  egger_result <- mr_pleiotropy_test(harmonized_results_MtoH_mf[[item_name]])
+  # Save Egger test result to Excel
+  write_xlsx(egger_result, paste0(egger_dir, item_name, "_Egger.xlsx"))
+  
+  # Apply Cochran's Q test
+  q_result <- mr_heterogeneity(harmonized_results_MtoH_mf[[item_name]])
+  # Save Q test result to Excel
+  write_xlsx(q_result, paste0(q_dir, item_name, "_Q.xlsx"))
+}
+
+# F statistic which tells you something about the instrument strength
+# (when F > 10 then your instrument has sufficient strength)
+
+# Directory path for saving the F statistics
+f_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/F/"
+
+# Initializing lists to store mean F statistics for each dataset
+mF_MtoH_f <- list()
+mF_MtoH_m <- list()
+mF_MtoH_mf <- list()
+
+# Loop for female data
+for(item_name in names(harmonized_results_MtoH_f)) {
+  item_data <- harmonized_results_MtoH_f[[item_name]]
+  mF_MtoH_f[[item_name]] <- calculate_mean_F(item_data)
+}
+
+# Loop for male data
+for(item_name in names(harmonized_results_MtoH_m)) {
+  item_data <- harmonized_results_MtoH_m[[item_name]]
+  mF_MtoH_m[[item_name]] <- calculate_mean_F(item_data)
+}
+
+# Loop for mixed gender data
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  item_data <- harmonized_results_MtoH_mf[[item_name]]
+  mF_MtoH_mf[[item_name]] <- calculate_mean_F(item_data)
+}
+
+# Convert the lists of mean F statistics to data frames
+mF_MtoH_f_df <- data.frame(Item = names(mF_MtoH_f), MeanF = unlist(mF_MtoH_f))
+mF_MtoH_m_df <- data.frame(Item = names(mF_MtoH_m), MeanF = unlist(mF_MtoH_m))
+mF_MtoH_mf_df <- data.frame(Item = names(mF_MtoH_mf), MeanF = unlist(mF_MtoH_mf))
+
+# Save the mean F statistics data frames to Excel files
+write_xlsx(mF_MtoH_f_df, paste0(f_dir, "mF_MtoH_f.xlsx"))
+write_xlsx(mF_MtoH_m_df, paste0(f_dir, "mF_MtoH_m.xlsx"))
+write_xlsx(mF_MtoH_mf_df, paste0(f_dir, "mF_MtoH_mf.xlsx"))
+
+# Function to calculate mean F statistic
+calculate_mean_F <- function(item_data) {
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure
+  BXG <- abs(BetaXG)         
+  F <- BXG^2 / seBetaXG^2
+  mean(F)
+}
+
+# I-squared value which tells you whether or not the results of MR-Egger
+# are reliable. When I-squared is >=0.9, then MR-Egger is reliable, when I-squared
+# is 0.6-0.9 then MR-Egger is only reliable if the SIMEX correction is applied,
+# when I-squared is <0.6 then MR-Egger is not reliable
+
+# The below script for Isquared is based on supplementary materials of Bowden et al. (2016) 
+# and was originally writen by Robyn Wootton - 07.03.2018
+# Define the Isq function
+Isq <- function(y, s) {
+  k <- length(y)
+  w <- 1 / s^2
+  sum.w <- sum(w)
+  mu.hat <- sum(y * w) / sum.w
+  Q <- sum(w * (y - mu.hat)^2)
+  Isq <- (Q - (k - 1)) / Q
+  Isq <- max(0, Isq)
+  return(Isq)
+}
+
+# Initialize lists to store Isq values
+Isq_unweighted_MtoH_f <- list()
+Isq_weighted_MtoH_f <- list()
+Isq_unweighted_MtoH_m <- list()
+Isq_weighted_MtoH_m <- list()
+Isq_unweighted_MtoH_mf <- list()
+Isq_weighted_MtoH_mf <- list()
+
+# Loop through each item in the list
+for(item_name in names(harmonized_results_MtoH_f)) {
+  item_data <- harmonized_results_MtoH_f[[item_name]]
+  
+  # Extract relevant data
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure 
+  seBetaYG <- item_data$se.outcome
+  BXG <- abs(BetaXG)
+  
+  # Calculate unweighted and weighted Isq
+  Isq_unweighted <- Isq(BXG, seBetaXG) 
+  Isq_weighted <- Isq((BXG / seBetaYG), (seBetaXG / seBetaYG))
+  
+  # Store the Isq values in the lists
+  Isq_unweighted_MtoH_f[[item_name]] <- Isq_unweighted
+  Isq_weighted_MtoH_f[[item_name]] <- Isq_weighted
+}
+
+
+# Loop through each item in the list
+for(item_name in names(harmonized_results_MtoH_m)) {
+  item_data <- harmonized_results_MtoH_m[[item_name]]
+  
+  # Extract relevant data
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure 
+  seBetaYG <- item_data$se.outcome
+  BXG <- abs(BetaXG)
+  
+  # Calculate unweighted and weighted Isq
+  Isq_unweighted <- Isq(BXG, seBetaXG) 
+  Isq_weighted <- Isq((BXG / seBetaYG), (seBetaXG / seBetaYG))
+  
+  # Store the Isq values in the lists
+  Isq_unweighted_MtoH_m[[item_name]] <- Isq_unweighted
+  Isq_weighted_MtoH_m[[item_name]] <- Isq_weighted
+}
+
+# Loop through each item in the list
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  item_data <- harmonized_results_MtoH_mf[[item_name]]
+  
+  # Extract relevant data
+  BetaXG <- item_data$beta.exposure
+  seBetaXG <- item_data$se.exposure 
+  seBetaYG <- item_data$se.outcome
+  BXG <- abs(BetaXG)
+  
+  # Calculate unweighted and weighted Isq
+  Isq_unweighted <- Isq(BXG, seBetaXG) 
+  Isq_weighted <- Isq((BXG / seBetaYG), (seBetaXG / seBetaYG))
+  
+  # Store the Isq values in the lists
+  Isq_unweighted_MtoH_mf[[item_name]] <- Isq_unweighted
+  Isq_weighted_MtoH_mf[[item_name]] <- Isq_weighted
+}
+
+# Convert the lists of Isquared to data frames
+IsqU_MtoH_f_df <- data.frame(Item = names(Isq_unweighted_MtoH_f), IsqU = unlist(Isq_unweighted_MtoH_f))
+IsqU_MtoH_m_df <- data.frame(Item = names(Isq_unweighted_MtoH_m), IsqU = unlist(Isq_unweighted_MtoH_m))
+IsqU_MtoH_mf_df <- data.frame(Item = names(Isq_unweighted_MtoH_mf), IsqU = unlist(Isq_unweighted_MtoH_mf))
+IsqW_MtoH_f_df <- data.frame(Item = names(Isq_weighted_MtoH_f), IsqW = unlist(Isq_weighted_MtoH_f))
+IsqW_MtoH_m_df <- data.frame(Item = names(Isq_weighted_MtoH_m), IsqW = unlist(Isq_weighted_MtoH_m))
+IsqW_MtoH_mf_df <- data.frame(Item = names(Isq_weighted_MtoH_mf), IsqW = unlist(Isq_weighted_MtoH_mf))
+
+# Merge weighted and unweighted
+Isq_MtoH_f_df <- full_join(IsqU_MtoH_f_df, IsqW_MtoH_f_df, by="Item")
+Isq_MtoH_m_df <- full_join(IsqU_MtoH_m_df, IsqW_MtoH_m_df, by="Item")
+Isq_MtoH_mf_df <- full_join(IsqU_MtoH_mf_df, IsqW_MtoH_mf_df, by="Item")
+
+# Save the Isquared data frames to Excel files
+I_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Isquared/"
+write_xlsx(Isq_MtoH_f_df, paste0(I_dir, "Isq_MtoH_f_df.xlsx"))
+write_xlsx(Isq_MtoH_m_df, paste0(I_dir, "Isq_MtoH_m_df.xlsx"))
+write_xlsx(Isq_MtoH_mf_df, paste0(I_dir, "Isq_MtoH_mf_df.xlsx"))
+
+# when I-squared is 0.6-0.9, then apply SIMEX correction as below
+# Make a new list of variable names for which SIMEX correction has to be applied
+
+# Creating a named list of all your lists
+all_lists <- list(Isq_unweighted_MtoH_f = Isq_unweighted_MtoH_f,
+                  Isq_weighted_MtoH_f = Isq_weighted_MtoH_f,
+                  Isq_unweighted_MtoH_m = Isq_unweighted_MtoH_m,
+                  Isq_weighted_MtoH_m = Isq_weighted_MtoH_m,
+                  Isq_unweighted_MtoH_mf = Isq_unweighted_MtoH_mf,
+                  Isq_weighted_MtoH_mf = Isq_weighted_MtoH_mf)
+
+# Looping through each list
+#for(list_name in names(all_lists)) {
+#  current_list <- all_lists[[list_name]]
+#  
+#  # Looping through each item in the current list
+#  for(item_name in names(current_list)) {
+#    item_value <- current_list[[item_name]]
+#    
+#    # Check if the item value is below 0.9
+#    if(item_value < 0.9) {
+#      print(paste(list_name, item_name, item_value, sep = ": "))
+#    }
+#  }
+#}
+
+# Leave one out analysis which tells you whether your main effect is driven by 
+# any particular single SNP
+# Assuming you want to save the plots in a specific directory
+loo_plot_dir <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/LeaveOneOutPlots/"
+
+# Loop for female data
+for(item_name in names(harmonized_results_MtoH_f)) {
+  perform_loo_analysis(harmonized_results_MtoH_f[[item_name]], item_name, loo_plot_dir)
+}
+
+# Loop for male data
+for(item_name in names(harmonized_results_MtoH_m)) {
+  perform_loo_analysis(harmonized_results_MtoH_m[[item_name]], item_name, loo_plot_dir)
+}
+
+# Loop for mixed gender data
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  perform_loo_analysis(harmonized_results_MtoH_mf[[item_name]], item_name, loo_plot_dir)
+}
+
+
+
+```
+
+# STEP 6: Steiger 
+
+Re-run harmonization step
+```{r}
+# Re-run harmonization step to be sure and save output separately in environment
+
+# Loop through the item names
+for (item_name in names(harmonized_results_HtoM_f)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_HtoM_f[[item_name]], mr_keep == TRUE)
+  
+  # Define a new variable name for the subsetted data frame
+  new_variable_name <- paste0("steiger_", item_name)  # You can adjust the naming as needed
+  
+  # Assign the subsetted data frame to a new variable in the global environment
+  assign(new_variable_name, item_data_h, envir = .GlobalEnv)
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+
+# Loop through the item names
+for (item_name in names(harmonized_results_HtoM_m)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_HtoM_m[[item_name]], mr_keep == TRUE)
+  
+  # Define a new variable name for the subsetted data frame
+  new_variable_name <- paste0("steiger_", item_name)  # You can adjust the naming as needed
+  
+  # Assign the subsetted data frame to a new variable in the global environment
+  assign(new_variable_name, item_data_h, envir = .GlobalEnv)
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+
+# Loop through the item names
+for (item_name in names(harmonized_results_MtoH_f)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_MtoH_f[[item_name]], mr_keep == TRUE)
+  
+  # Define a new variable name for the subsetted data frame
+  new_variable_name <- paste0("steiger_", item_name)  # You can adjust the naming as needed
+  
+  # Assign the subsetted data frame to a new variable in the global environment
+  assign(new_variable_name, item_data_h, envir = .GlobalEnv)
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+
+# Loop through the item names
+for (item_name in names(harmonized_results_MtoH_mf)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_MtoH_mf[[item_name]], mr_keep == TRUE)
+  
+  # Define a new variable name for the subsetted data frame
+  new_variable_name <- paste0("steiger_", item_name)  # You can adjust the naming as needed
+  
+  # Assign the subsetted data frame to a new variable in the global environment
+  assign(new_variable_name, item_data_h, envir = .GlobalEnv)
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+```
+
+Data preparation for Steiger:
+1. Check if sample sizes and p-values are present in all exposures and outcomes, if not add any you don't have
+
+2. Indicate units of GWAS studies used - IMPORTANT
+- If you have either a binary exposure or outcome then make sure the unit column is labelled "log odds" and add a population prevalence column 
+- If the unit is in standard deviations (standardized measure) then label "SD"
+- If the unit is not binary or in SD, then simply label with the appropriate name (for instance "BP" for blood pressure)
+
+3. If you have either a binary exposure or outcome, add ncase/ncontrol columns
+
+4. Make sure both exposure and outcome have eaf
+- If only exposure has eaf, copy this to the outcome column
+
+Population prevalences:
+SMI
+- Depressive disorder: women 8%, men 5%, overall 7% (ref:https://www.thelancet.com/journals/lanpub/article/PIIS2468-2667(21)00047-5/fulltext)
+- Bipolar disorder: 2% no sex differences (ref: https://linkinghub.elsevier.com/retrieve/pii/S0924-977X(05)00074-X)
+- Schizophrenia: 0.5% no significant sex differences (ref: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6192504/)
+
+Units:
+Hormones
+
+
+--------Direction: sex hormones to mental illness--------
+
+
+```{r}
+
+# SHBGpre to DeprB_f
+
+# 1. Add sample size and p-values 
+
+#steiger_shbg_pre_exp_dat_DeprB_f_oc$samplesize.exposure <- 
+#steiger_shbg_pre_exp_dat_DeprB_f_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_shbg_pre_exp_dat_DeprB_f_oc$units.exposure<-"ng/dL"
+steiger_shbg_pre_exp_dat_DeprB_f_oc$units.outcome<-"log odds"
+#steiger_shbg_pre_exp_dat_DeprB_f_oc$prevalence.exposure<-0.01
+steiger_shbg_pre_exp_dat_DeprB_f_oc$prevalence.outcome<-0.08
+
+# Add ncase/ncontrol columns
+
+#steiger_shbg_pre_exp_dat_DeprB_f_oc$ncase.exposure<- 53386
+#steiger_shbg_pre_exp_dat_DeprB_f_oc$ncontrol.exposure<- 77258  
+steiger_shbg_pre_exp_dat_DeprB_f_oc$ncase.outcome<- 11290
+steiger_shbg_pre_exp_dat_DeprB_f_oc$ncontrol.outcome<- 15283
+
+# Add eaf
+
+#steiger_shbg_pre_exp_dat_DeprB_f_oc$eaf.outcome <- item_name_steiger$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_shbg_pre_exp_dat_DeprB_f_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/shbg_pre_exp_dat_DeprB_f_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/shbg_pre_exp_dat_DeprB_f_sig.xlsx")
+
+
+# SHBGpost to DeprB_f
+
+# 1. Add sample size and p-values 
+
+#steiger_shbg_post_exp_dat_DeprB_f_oc$samplesize.exposure <- 
+#steiger_shbg_post_exp_dat_DeprB_f_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_shbg_post_exp_dat_DeprB_f_oc$units.exposure<-"ng/dL"
+steiger_shbg_post_exp_dat_DeprB_f_oc$units.outcome<-"log odds"
+#steiger_shbg_post_exp_dat_DeprB_f_oc$prevalence.exposure<-
+steiger_shbg_post_exp_dat_DeprB_f_oc$prevalence.outcome<-0.08
+
+# Add ncase/ncontrol columns
+
+#steiger_shbg_post_exp_dat_DeprB_f_oc$ncase.exposure<- 53386
+#steiger_shbg_post_exp_dat_DeprB_f_oc$ncontrol.exposure<- 77258  
+steiger_shbg_post_exp_dat_DeprB_f_oc$ncase.outcome<- 11290
+steiger_shbg_post_exp_dat_DeprB_f_oc$ncontrol.outcome<- 15283
+
+# Add eaf
+
+#steiger_shbg_post_exp_dat_DeprB_f_oc$eaf.outcome <- item_name_steiger$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_shbg_post_exp_dat_DeprB_f_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/shbg_post_exp_dat_DeprB_f_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/shbg_post_exp_dat_DeprB_f_sig.xlsx")
+
+# T_m to SCZ_m
+
+# 1. Add sample size and p-values 
+
+#steiger_test_m_exp_dat_SCZ_m_oc$samplesize.exposure <- 
+#steiger_test_m_exp_dat_SCZ_m_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_test_m_exp_dat_SCZ_m_oc$units.exposure<-"nmol/L"
+steiger_test_m_exp_dat_SCZ_m_oc$units.outcome<-"log odds"
+#steiger_test_m_exp_dat_SCZ_m_oc$prevalence.exposure<-
+steiger_test_m_exp_dat_SCZ_m_oc$prevalence.outcome<-0.005
+
+# Add ncase/ncontrol columns
+
+#steiger_test_m_exp_dat_SCZ_m_oc$ncase.exposure<- 
+#steiger_test_m_exp_dat_SCZ_m_oc$ncontrol.exposure<-  
+#steiger_test_m_exp_dat_SCZ_m_oc$ncase.outcome<- 
+#steiger_test_m_exp_dat_SCZ_m_oc$ncontrol.outcome<- 
+
+# Add eaf
+
+#steiger_test_m_exp_dat_SCZ_m_oc$eaf.outcome <- item_name_steiger$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_test_m_exp_dat_SCZ_m_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/test_m_exp_dat_SCZ_m_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/test_m_exp_dat_SCZ_m_sig.xlsx")
+
+
+```
+
+--------Direction: mental illness to sex hormones--------
+
+```{r}
+# schiz_f to SHBGpost
+
+# 1. Add sample size and p-values 
+
+#steiger_schiz_f_exp_dat_SHBGpost_oc$samplesize.exposure <- 
+#steiger_schiz_f_exp_dat_SHBGpost_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_schiz_f_exp_dat_SHBGpost_oc$units.exposure<-"log odds"
+steiger_schiz_f_exp_dat_SHBGpost_oc$units.outcome<-"ng/dL"
+steiger_schiz_f_exp_dat_SHBGpost_oc$prevalence.exposure<-0.005
+#steiger_schiz_f_exp_dat_SHBGpost_oc$prevalence.outcome<-
+
+# Add ncase/ncontrol columns
+
+#steiger_schiz_f_exp_dat_SHBGpost_oc$ncase.exposure<- 
+#steiger_schiz_f_exp_dat_SHBGpost_oc$ncontrol.exposure<-  
+#steiger_schiz_f_exp_dat_SHBGpost_oc$ncase.outcome<- 
+#steiger_schiz_f_exp_dat_SHBGpost_oc$ncontrol.outcome<- 
+
+# Add eaf
+
+steiger_schiz_f_exp_dat_SHBGpost_oc$eaf.outcome <- steiger_schiz_f_exp_dat_SHBGpost_oc$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_schiz_f_exp_dat_SHBGpost_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_f_exp_dat_SHBGpost_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_f_exp_dat_SHBGpost_sig.xlsx")
+
+# schiz_f to Prog
+
+# 1. Add sample size and p-values 
+
+#steiger_schiz_f_exp_dat_Progesterone_oc$samplesize.exposure <- 
+#steiger_schiz_f_exp_dat_Progesterone_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_schiz_f_exp_dat_Progesterone_oc$units.exposure<-"log odds"
+steiger_schiz_f_exp_dat_Progesterone_oc$units.outcome<-"ng/dL"
+steiger_schiz_f_exp_dat_Progesterone_oc$prevalence.exposure<-0.005
+#steiger_schiz_f_exp_dat_Progesterone_oc$prevalence.outcome<-
+
+# Add ncase/ncontrol columns
+
+#steiger_schiz_f_exp_dat_Progesterone_oc$ncase.exposure<- 
+#steiger_schiz_f_exp_dat_Progesterone_oc$ncontrol.exposure<-  
+#steiger_schiz_f_exp_dat_Progesterone_oc$ncase.outcome<- 
+#steiger_schiz_f_exp_dat_Progesterone_oc$ncontrol.outcome<- 
+
+# Add eaf
+
+#steiger_schiz_f_exp_dat_Progesterone_oc$eaf.outcome <- steiger_schiz_f_exp_dat_Progesterone_oc$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_schiz_f_exp_dat_Progesterone_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+print(res.true_steiger)
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_f_exp_dat_Progesterone_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_f_exp_dat_Progesterone_sig.xlsx")
+
+
+# schiz_mf to T_mf
+
+# 1. Add sample size and p-values 
+
+#steiger_schiz_mf_exp_dat_T_mf_oc$samplesize.exposure <- 
+#steiger_schiz_mf_exp_dat_T_mf_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_schiz_mf_exp_dat_T_mf_oc$units.exposure<-"log odds"
+steiger_schiz_mf_exp_dat_T_mf_oc$units.outcome<-"nmol/L"
+steiger_schiz_mf_exp_dat_T_mf_oc$prevalence.exposure<-0.005
+#steiger_schiz_mf_exp_dat_T_mf_oc$prevalence.outcome<-
+
+# Add ncase/ncontrol columns
+
+#steiger_schiz_mf_exp_dat_T_mf_oc$ncase.exposure<- 
+#steiger_schiz_mf_exp_dat_T_mf_oc$ncontrol.exposure<-  
+#steiger_schiz_mf_exp_dat_T_mf_oc$ncase.outcome<- 
+#steiger_schiz_mf_exp_dat_T_mf_oc$ncontrol.outcome<- 
+
+# Add eaf
+
+#steiger_schiz_mf_exp_dat_T_mf_oc$eaf.outcome <- steiger_schiz_mf_exp_dat_T_mf_oc$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_schiz_mf_exp_dat_T_mf_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_mf_exp_dat_T_mf_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_mf_exp_dat_T_mf_sig.xlsx")
+
+
+# schiz_mf to SHBG_mf
+
+# 1. Add sample size and p-values 
+
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$samplesize.exposure <- 
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_schiz_mf_exp_dat_SHBG_mf_oc$units.exposure<-"log odds"
+steiger_schiz_mf_exp_dat_SHBG_mf_oc$units.outcome<-"nmol/L"
+steiger_schiz_mf_exp_dat_SHBG_mf_oc$prevalence.exposure<-0.005
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$prevalence.outcome<-
+
+# Add ncase/ncontrol columns
+
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$ncase.exposure<- 
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$ncontrol.exposure<-  
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$ncase.outcome<- 
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$ncontrol.outcome<- 
+
+# Add eaf
+
+#steiger_schiz_mf_exp_dat_SHBG_mf_oc$eaf.outcome <- steiger_schiz_mf_exp_dat_SHBG_mf_oc$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_schiz_mf_exp_dat_SHBG_mf_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_mf_exp_dat_SHBG_mf_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/schiz_mf_exp_dat_SHBG_mf_sig.xlsx")
+
+
+
+# bipN_mf to SHBG_mf
+
+# 1. Add sample size and p-values 
+
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$samplesize.exposure <- 
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$samplesize.outcome<-
+
+# 2. Indicate units of GWAS studies used
+# Binary exposure or outcome -> "log odds" + add population prevalence column 
+# Standard deviations (standardized measure) -> "SD"
+# Not binary or in SD -> simply label with the appropriate name (for instance "BP" for blood pressure)
+
+steiger_bipN_mf_exp_dat_SHBG_mf_oc$units.exposure<-"log odds"
+steiger_bipN_mf_exp_dat_SHBG_mf_oc$units.outcome<-"nmol/L"
+steiger_bipN_mf_exp_dat_SHBG_mf_oc$prevalence.exposure<-0.02
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$prevalence.outcome<-
+
+# Add ncase/ncontrol columns
+
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$ncase.exposure<- 
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$ncontrol.exposure<-  
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$ncase.outcome<- 
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$ncontrol.outcome<- 
+
+# Add eaf
+
+#steiger_bipN_mf_exp_dat_SHBG_mf_oc$eaf.outcome <- steiger_bipN_mf_exp_dat_SHBG_mf_oc$eaf.exposure
+
+# Run Steiger command 
+# How many SNPs explain more variance in exposure than outcome? -> Call this data "true"
+# How many of those survived a p-value threshold of P<0.05? --> Call this data "sig"
+# Re-run analysis on data called true 
+# Re-run analysis on data called sig 
+
+input_steiger <- steiger_bipN_mf_exp_dat_SHBG_mf_oc
+
+steiger <- steiger_filtering(input_steiger)
+table(steiger$steiger_dir) 
+steiger_true<-subset(steiger, steiger$steiger_dir==TRUE)
+steiger_sig<-subset(steiger, steiger$steiger_dir==TRUE & steiger$steiger_pval<0.05)
+res.true_steiger <- mr(steiger_true)
+res.sig_steiger <- mr(steiger_sig)
+
+write_xlsx(res.true_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/bipN_mf_exp_dat_SHBG_mf_true.xlsx")
+write_xlsx(res.sig_steiger,"C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/Steiger/bipN_mf_exp_dat_SHBG_mf_sig.xlsx")
+
+
+```
+
+
+
+# STEP 7: GSMR
+
+Data preparation
+```{r Prepare and load the GWAS summary data}
+
+gsmr_input_list_HtoM_f <- list()
+gsmr_input_list_HtoM_m <- list()
+gsmr_input_list_HtoM_mf <- list()
+gsmr_input_list_MtoH_f <- list()
+gsmr_input_list_MtoH_m <- list()
+gsmr_input_list_MtoH_mf <- list()
+
+# Loop through each item in the harmonized_results_HtoM_f list
+for(item_name in names(harmonized_results_HtoM_f)) {
+  # Remove SNPs from harmonization step
+  item_data_h <- subset(harmonized_results_HtoM_f[[item_name]], mr_keep == TRUE)
+  
+  # Select and rename columns
+  gsmr_input <- item_data_h %>%
+    select(
+      SNP = SNP, 
+      a1 = effect_allele.exposure, 
+      a2 = other_allele.exposure,
+      bzx = beta.exposure, 
+      bzy = beta.outcome, 
+      a1_freq = eaf.exposure, 
+      bzy_se = se.outcome, 
+      bzy_pval = pval.outcome,
+      bzx_se = se.exposure, 
+      bzx_pval = pval.exposure, 
+      bzx_n = samplesize.exposure, 
+      bzy_n = samplesize.outcome
+    )
+  
+  # Store the results in the list
+  gsmr_input_list_HtoM_f[[item_name]] <- gsmr_input
+}
+
+# Loop through each item in the harmonized_results_HtoM_m list
+for(item_name in names(harmonized_results_HtoM_m)) {
+  # Remove SNPs from harmonization step
+  item_data_h <- subset(harmonized_results_HtoM_m[[item_name]], mr_keep == TRUE)
+  
+  # Select and rename columns
+  gsmr_input <- item_data_h %>%
+    select(
+      SNP = SNP, 
+      a1 = effect_allele.exposure, 
+      a2 = other_allele.exposure,
+      bzx = beta.exposure, 
+      bzy = beta.outcome, 
+      a1_freq = eaf.exposure, 
+      bzy_se = se.outcome, 
+      bzy_pval = pval.outcome,
+      bzx_se = se.exposure, 
+      bzx_pval = pval.exposure, 
+      bzx_n = samplesize.exposure, 
+      bzy_n = samplesize.outcome
+    )
+  
+  # Store the results in the list
+  gsmr_input_list_HtoM_m[[item_name]] <- gsmr_input
+}
+
+# Loop through each item in the harmonized_results_HtoM_mf list
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  # Remove SNPs from harmonization step
+  item_data_h <- subset(harmonized_results_HtoM_mf[[item_name]], mr_keep == TRUE)
+  
+  # Select and rename columns
+  gsmr_input <- item_data_h %>%
+    select(
+      SNP = SNP, 
+      a1 = effect_allele.exposure, 
+      a2 = other_allele.exposure,
+      bzx = beta.exposure, 
+      bzy = beta.outcome, 
+      a1_freq = eaf.exposure, 
+      bzy_se = se.outcome, 
+      bzy_pval = pval.outcome,
+      bzx_se = se.exposure, 
+      bzx_pval = pval.exposure, 
+      bzx_n = samplesize.exposure, 
+      bzy_n = samplesize.outcome
+    )
+  
+  # Store the results in the list
+  gsmr_input_list_HtoM_mf[[item_name]] <- gsmr_input
+}
+
+# MtoH
+for(item_name in names(harmonized_results_MtoH_f)) {
+  # Remove SNPs from harmonization step
+  item_data_h <- subset(harmonized_results_MtoH_f[[item_name]], mr_keep == TRUE)
+  
+  # Select and rename columns
+  gsmr_input <- item_data_h %>%
+    select(
+      SNP = SNP, 
+      a1 = effect_allele.exposure, 
+      a2 = other_allele.exposure,
+      bzx = beta.exposure, 
+      bzy = beta.outcome, 
+      a1_freq = eaf.exposure, 
+      bzy_se = se.outcome, 
+      bzy_pval = pval.outcome,
+      bzx_se = se.exposure, 
+      bzx_pval = pval.exposure, 
+      bzx_n = samplesize.exposure, 
+      bzy_n = samplesize.outcome
+    )
+  
+  # Store the results in the list
+  gsmr_input_list_MtoH_f[[item_name]] <- gsmr_input
+}
+
+# Loop through each item in the harmonized_results_MtoH_m list
+for(item_name in names(harmonized_results_MtoH_m)) {
+  # Remove SNPs from harmonization step
+  item_data_h <- subset(harmonized_results_MtoH_m[[item_name]], mr_keep == TRUE)
+  
+  # Select and rename columns
+  gsmr_input <- item_data_h %>%
+    select(
+      SNP = SNP, 
+      a1 = effect_allele.exposure, 
+      a2 = other_allele.exposure,
+      bzx = beta.exposure, 
+      bzy = beta.outcome, 
+      a1_freq = eaf.exposure, 
+      bzy_se = se.outcome, 
+      bzy_pval = pval.outcome,
+      bzx_se = se.exposure, 
+      bzx_pval = pval.exposure, 
+      bzx_n = samplesize.exposure, 
+      bzy_n = samplesize.outcome
+    )
+  
+  # Store the results in the list
+  gsmr_input_list_MtoH_m[[item_name]] <- gsmr_input
+}
+
+# Loop through each item in the harmonized_results_MtoH_mf list
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  # Remove SNPs from harmonization step
+  item_data_h <- subset(harmonized_results_MtoH_mf[[item_name]], mr_keep == TRUE)
+  
+  # Select and rename columns
+  gsmr_input <- item_data_h %>%
+    select(
+      SNP = SNP, 
+      a1 = effect_allele.exposure, 
+      a2 = other_allele.exposure,
+      bzx = beta.exposure, 
+      bzy = beta.outcome, 
+      a1_freq = eaf.exposure, 
+      bzy_se = se.outcome, 
+      bzy_pval = pval.outcome,
+      bzx_se = se.exposure, 
+      bzx_pval = pval.exposure, 
+      bzx_n = samplesize.exposure, 
+      bzy_n = samplesize.outcome
+    )
+  
+  # Store the results in the list
+  gsmr_input_list_MtoH_mf[[item_name]] <- gsmr_input
+}
+
+# Prepare files for LD correlation matrix
+
+# Save the genetic variants and effect alleles in a text file using R
+output_dir_HtoM <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/Genetic_variants/HtoM/"
+output_dir_MtoH <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/Genetic_variants/MtoH/"
+
+# Loop through each item in the harmonized_results_HtoM lists
+for(item_name in names(harmonized_results_HtoM_f)) {
+  # Subset the data where mr_keep is TRUE and select the first two columns (SNP and a1)
+  item_data_subset <- subset(harmonized_results_HtoM_f[[item_name]], mr_keep == TRUE) %>%
+    select(SNP, a1 = effect_allele.exposure)
+  
+  # Construct the output file path
+  output_file_path <- paste0(output_dir_HtoM, item_name, "_snps.allele")
+  
+  # Save the subsetted data to a file
+  write.table(item_data_subset, file = output_file_path, col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+for(item_name in names(harmonized_results_HtoM_m)) {
+  # Subset the data where mr_keep is TRUE and select the first two columns (SNP and a1)
+  item_data_subset <- subset(harmonized_results_HtoM_m[[item_name]], mr_keep == TRUE) %>%
+    select(SNP, a1 = effect_allele.exposure)
+  
+  # Construct the output file path
+  output_file_path <- paste0(output_dir_HtoM, item_name, "_snps.allele")
+  
+  # Save the subsetted data to a file
+  write.table(item_data_subset, file = output_file_path, col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+for(item_name in names(harmonized_results_HtoM_mf)) {
+  # Subset the data where mr_keep is TRUE and select the first two columns (SNP and a1)
+  item_data_subset <- subset(harmonized_results_HtoM_mf[[item_name]], mr_keep == TRUE) %>%
+    select(SNP, a1 = effect_allele.exposure)
+  
+  # Construct the output file path
+  output_file_path <- paste0(output_dir_HtoM, item_name, "_snps.allele")
+  
+  # Save the subsetted data to a file
+  write.table(item_data_subset, file = output_file_path, col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+
+# Loop through each item in the harmonized_results_MtoH lists
+for(item_name in names(harmonized_results_MtoH_f)) {
+  # Subset the data where mr_keep is TRUE and select the first two columns (SNP and a1)
+  item_data_subset <- subset(harmonized_results_MtoH_f[[item_name]], mr_keep == TRUE) %>%
+    select(SNP, a1 = effect_allele.exposure)
+  
+  # Construct the output file path
+  output_file_path <- paste0(output_dir_MtoH, item_name, "_snps.allele")
+  
+  # Save the subsetted data to a file
+  write.table(item_data_subset, file = output_file_path, col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+for(item_name in names(harmonized_results_MtoH_m)) {
+  # Subset the data where mr_keep is TRUE and select the first two columns (SNP and a1)
+  item_data_subset <- subset(harmonized_results_MtoH_m[[item_name]], mr_keep == TRUE) %>%
+    select(SNP, a1 = effect_allele.exposure)
+  
+  # Construct the output file path
+  output_file_path <- paste0(output_dir_MtoH, item_name, "_snps.allele")
+  
+  # Save the subsetted data to a file
+  write.table(item_data_subset, file = output_file_path, col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+for(item_name in names(harmonized_results_MtoH_mf)) {
+  # Subset the data where mr_keep is TRUE and select the first two columns (SNP and a1)
+  item_data_subset <- subset(harmonized_results_MtoH_mf[[item_name]], mr_keep == TRUE) %>%
+    select(SNP, a1 = effect_allele.exposure)
+  
+  # Construct the output file path
+  output_file_path <- paste0(output_dir_MtoH, item_name, "_snps.allele")
+  
+  # Save the subsetted data to a file
+  write.table(item_data_subset, file = output_file_path, col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+
+# Extract the genotype data from a GWAS dataset using GCTA --> is run separately in the Snellius server
+
+# gcta64 --bfile gsmr_example --extract gsmr_example_snps.allele --update-ref-allele gsmr_example_snps.allele --recode --out gsmr_example
+
+```
+
+LD correlation matrix and run GSMR
+```{r Generate matrix and run GSMR analyses}
+
+GSMR_dir <- ("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/Results/")
+
+# Define GSMR settings
+n_ref = 381    # Sample size of the reference sample
+gwas_thresh = 1e-5    # GWAS threshold to select SNPs as the instruments for the GSMR analysis
+single_snp_heidi_thresh = 0.01    # p-value threshold for single-SNP-based HEIDI-outlier analysis
+multi_snp_heidi_thresh = 0.01    # p-value threshold for multi-SNP-based HEIDI-outlier analysis
+nsnps_thresh = 8   # the minimum number of instruments required for the GSMR analysis
+heidi_outlier_flag = T    # flag for HEIDI-outlier analysis
+ld_r2_thresh = 1.0    # LD r2 threshold to remove SNPs in high LD
+ld_fdr_thresh = 0.05   # FDR threshold to remove the chance correlations between the SNP instruments
+gsmr2_beta = 0     # 0 - the original HEIDI-outlier method; 1 - the new HEIDI-outlier method that is currently under development 
+
+
+## Testosterone to scz in men ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/HtoM/test_m_exp_dat_SCZ_m_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/HtoM/test_m_exp_dat_SCZ_m_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_HtoM_m$test_m_exp_dat_SCZ_m_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+
+write_xlsx(gsmr_results, paste0(GSMR_dir, "test_m_exp_dat_SCZ_m_oc.xlsx"))
+
+## SHBG pre-menoapuse to depr in women ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/HtoM/shbg_pre_exp_dat_DeprB_f_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/HtoM/shbg_pre_exp_dat_DeprB_f_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_HtoM_f$shbg_pre_exp_dat_DeprB_f_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+cat("Indexes of the SNPs used in the GSMR analysis: ", 
+    gsmr_results$used_index[1:5], "...")
+cat("Number of SNPs with missing estimates in the summary data: ", 
+    length(gsmr_results$na_snps))
+cat("Number of non-significant SNPs: ", length(gsmr_results$weak_snps))
+cat("Number of SNPs in high LD ( LD rsq >", ld_r2_thresh, "): ", 
+    length(gsmr_results$linkage_snps))
+cat("Number of pleiotropic outliers: ", length(gsmr_results$pleio_snps))
+
+## SHBG post-menopause to depr in women ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/HtoM/shbg_post_exp_dat_DeprB_f_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/HtoM/shbg_post_exp_dat_DeprB_f_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_HtoM_f$shbg_post_exp_dat_DeprB_f_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+
+
+
+## Schizophrenia on SHBG post-menopause in women ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_f_exp_dat_SHBGpost_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_f_exp_dat_SHBGpost_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_MtoH_f$schiz_f_exp_dat_SHBGpost_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+cat("Indexes of the SNPs used in the GSMR analysis: ", 
+    gsmr_results$used_index[1:5], "...")
+cat("Number of SNPs with missing estimates in the summary data: ", 
+    length(gsmr_results$na_snps))
+cat("Number of non-significant SNPs: ", length(gsmr_results$weak_snps))
+cat("Number of SNPs in high LD ( LD rsq >", ld_r2_thresh, "): ", 
+    length(gsmr_results$linkage_snps))
+cat("Number of pleiotropic outliers: ", length(gsmr_results$pleio_snps))
+
+
+
+## Schizophrenia on progesterone in women ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_f_exp_dat_Progesterone_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_f_exp_dat_Progesterone_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_MtoH_f$schiz_f_exp_dat_Progesterone_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+cat("Indexes of the SNPs used in the GSMR analysis: ", 
+    gsmr_results$used_index[1:5], "...")
+cat("Number of SNPs with missing estimates in the summary data: ", 
+    length(gsmr_results$na_snps))
+cat("Number of non-significant SNPs: ", length(gsmr_results$weak_snps))
+cat("Number of SNPs in high LD ( LD rsq >", ld_r2_thresh, "): ", 
+    length(gsmr_results$linkage_snps))
+cat("Number of pleiotropic outliers: ", length(gsmr_results$pleio_snps))
+
+
+
+## Schizophrenia on testosterone in both sexes ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_mf_exp_dat_T_mf_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_mf_exp_dat_T_mf_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_MtoH_mf$schiz_mf_exp_dat_T_mf_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+cat("Indexes of the SNPs used in the GSMR analysis: ", 
+    gsmr_results$used_index[1:5], "...")
+cat("Number of SNPs with missing estimates in the summary data: ", 
+    length(gsmr_results$na_snps))
+cat("Number of non-significant SNPs: ", length(gsmr_results$weak_snps))
+cat("Number of SNPs in high LD ( LD rsq >", ld_r2_thresh, "): ", 
+    length(gsmr_results$linkage_snps))
+cat("Number of pleiotropic outliers: ", length(gsmr_results$pleio_snps))
+
+
+## Schizophrenia on SHBG in both sexes ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_mf_exp_dat_SHBG_mf_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/schiz_mf_exp_dat_SHBG_mf_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_MtoH_mf$schiz_mf_exp_dat_SHBG_mf_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+cat("Indexes of the SNPs used in the GSMR analysis: ", 
+    gsmr_results$used_index[1:5], "...")
+cat("Number of SNPs with missing estimates in the summary data: ", 
+    length(gsmr_results$na_snps))
+cat("Number of non-significant SNPs: ", length(gsmr_results$weak_snps))
+cat("Number of SNPs in high LD ( LD rsq >", ld_r2_thresh, "): ", 
+    length(gsmr_results$linkage_snps))
+cat("Number of pleiotropic outliers: ", length(gsmr_results$pleio_snps))
+
+
+
+## Bipolar on SHBG in both sexes ##
+
+snp_coeff_id = scan("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/bipN_mf_exp_dat_SHBG_mf_oc.xmat", what="", nlines=1)
+snp_coeff = read.table("C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/GSMR/GCTA/MtoH/bipN_mf_exp_dat_SHBG_mf_oc.xmat", header=F, skip=2)
+
+input_GSMR <- gsmr_input_list_MtoH_mf$bipN_mf_exp_dat_SHBG_mf_oc
+
+# Match the SNP genotype data with the summary data
+
+snp_id = Reduce(intersect, list(input_GSMR$SNP, snp_coeff_id))
+input_GSMR = input_GSMR[match(snp_id, input_GSMR$SNP),]
+snp_order = match(snp_id, snp_coeff_id)
+snp_coeff_id = snp_coeff_id[snp_order]
+snp_coeff = snp_coeff[, snp_order]
+
+# Calculate the LD correlation matrix
+
+ldrho = cor(snp_coeff)
+
+# Check the size of the correlation matrix and double-check if the order of the 
+# SNPs in the LD correlation matrix is consistent with that in the GWAS summary data
+
+colnames(ldrho) = rownames(ldrho) = snp_coeff_id
+
+dim(ldrho)
+
+# Show the first 5 rows and columns of the matrix  
+
+ldrho[1:5,1:5]
+
+# Run GSMR
+gsmr_results <- gsmr(
+      input_GSMR$bzx, input_GSMR$bzx_se, input_GSMR$bzx_pval,
+      input_GSMR$bzy, input_GSMR$bzy_se, input_GSMR$bzy_pval,
+      ldrho, snp_coeff_id, n_ref, heidi_outlier_flag, gwas_thresh,
+      single_snp_heidi_thresh, multi_snp_heidi_thresh, nsnps_thresh,
+      ld_r2_thresh, ld_fdr_thresh, gsmr2_beta
+    )
+
+cat("The estimated effect of the exposure on outcome: ",gsmr_results$bxy)
+cat("Standard error of bxy: ",gsmr_results$bxy_se)
+cat("P-value for bxy: ", gsmr_results$bxy_pval)
+cat("Indexes of the SNPs used in the GSMR analysis: ", 
+    gsmr_results$used_index[1:5], "...")
+cat("Number of SNPs with missing estimates in the summary data: ", 
+    length(gsmr_results$na_snps))
+cat("Number of non-significant SNPs: ", length(gsmr_results$weak_snps))
+cat("Number of SNPs in high LD ( LD rsq >", ld_r2_thresh, "): ", 
+    length(gsmr_results$linkage_snps))
+cat("Number of pleiotropic outliers: ", length(gsmr_results$pleio_snps))
+
+
+
+```
+
+
+# STEP 8: MR PRESSO
+
+--------Direction: sex hormones to mental illness--------
+```{r Harmonize datasets again HtoM}
+
+input_mrpresso_HtoM_f <- list()
+input_mrpresso_HtoM_m <- list()
+input_mrpresso_HtoM_mf <- list()
+
+# Loop through the item names
+for (item_name in names(harmonized_results_HtoM_f)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_HtoM_f[[item_name]], mr_keep == TRUE)
+  
+  # Store the subsetted data in the results_list
+  input_mrpresso_HtoM_f[[item_name]] <- item_data_h
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+# Loop through the item names
+for (item_name in names(harmonized_results_HtoM_m)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_HtoM_m[[item_name]], mr_keep == TRUE)
+  
+  # Store the subsetted data in the results_list
+  input_mrpresso_HtoM_m[[item_name]] <- item_data_h
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+# Loop through the item names
+for (item_name in names(harmonized_results_HtoM_mf)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_HtoM_mf[[item_name]], mr_keep == TRUE)
+  
+  # Store the subsetted data in the results_list
+  input_mrpresso_HtoM_mf[[item_name]] <- item_data_h
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+# Save objects to environment
+list2env(input_mrpresso_HtoM_f, envir = .GlobalEnv)
+list2env(input_mrpresso_HtoM_m, envir = .GlobalEnv)
+list2env(input_mrpresso_HtoM_mf, envir = .GlobalEnv)
+```
+
+--------Direction: mental illness to sex hormones--------
+```{r Harmonize datasets again MtoH}
+
+input_mrpresso_MtoH_f <- list()
+input_mrpresso_MtoH_m <- list()
+input_mrpresso_MtoH_mf <- list()
+
+# Loop through the item names
+for (item_name in names(harmonized_results_MtoH_f)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_MtoH_f[[item_name]], mr_keep == TRUE)
+  
+  # Store the subsetted data in the results_list
+  input_mrpresso_MtoH_f[[item_name]] <- item_data_h
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+# Loop through the item names
+for (item_name in names(harmonized_results_MtoH_m)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_MtoH_m[[item_name]], mr_keep == TRUE)
+  
+  # Store the subsetted data in the results_list
+  input_mrpresso_MtoH_m[[item_name]] <- item_data_h
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+# Loop through the item names
+for (item_name in names(harmonized_results_MtoH_mf)) {
+  # Subset the data for the current item where mr_keep is TRUE
+  item_data_h <- subset(harmonized_results_MtoH_mf[[item_name]], mr_keep == TRUE)
+  
+  # Store the subsetted data in the results_list
+  input_mrpresso_MtoH_mf[[item_name]] <- item_data_h
+  
+  # Print a message to indicate successful execution
+  cat("Subset for item", item_name, "processed successfully.\n")
+}
+
+# Save objects to environment
+list2env(input_mrpresso_MtoH_f, envir = .GlobalEnv)
+list2env(input_mrpresso_MtoH_m, envir = .GlobalEnv)
+list2env(input_mrpresso_MtoH_mf, envir = .GlobalEnv)
+
+
+```
+
+Now run MR PRESSO
+
+--------Direction: sex hormones to mental illness--------
+```{r Run MR Presso with standard NbDistribution HtoM}
+
+# Save results of console
+# File to save the output
+output_file_mrpresso_HtoM <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/MRPresso/mr_presso_results_HtoM.txt"
+
+# Open a connection to the file
+output_connection_HtoM <- file(output_file_mrpresso_HtoM, open = "wt")
+
+# Redirect R output to the file
+sink(output_connection_HtoM)
+sink(output_connection_HtoM, type = "message")
+
+# Function to handle warnings
+handle_warning <- function(w) {
+  cat("\nWarning for item:", current_item, "\n")
+  cat("Warning message:", conditionMessage(w), "\n")
+  invokeRestart("muffleWarning")
+}
+
+#HtoM_f
+# Iterate over the list of items
+for (item_name in names(input_mrpresso_HtoM_f)) {
+  current_item <- item_name  # Track the current item for the warning handler
+  tryCatch({
+    # Get the object from the environment
+    input <- get(item_name, envir = .GlobalEnv)
+    
+    # Perform the MR-PRESSO test
+    withCallingHandlers({
+      mr_presso_results <- mr_presso(BetaOutcome = "beta.outcome", BetaExposure = "beta.exposure", 
+                                       SdOutcome = "se.outcome", SdExposure = "se.exposure", 
+                                       OUTLIERtest = TRUE, DISTORTIONtest = TRUE, 
+                                       data = input, NbDistribution = 1000, 
+                                       SignifThreshold = 0.05)
+      cat("\nResults for item:", item_name, "\n")
+      print(mr_presso_results)
+    }, warning = handle_warning)
+  }, error = function(e) {
+    cat("\nAn error occurred with item:", item_name, "\n")
+    cat("Error message:", e$message, "\n")
+  })
+}
+
+#HtoM_m
+# Iterate over the list of items
+for (item_name in names(input_mrpresso_HtoM_m)) {
+  current_item <- item_name  # Track the current item for the warning handler
+  tryCatch({
+    # Get the object from the environment
+    input <- get(item_name, envir = .GlobalEnv)
+    
+    # Perform the MR-PRESSO test
+    withCallingHandlers({
+      mr_presso_results <- mr_presso(BetaOutcome = "beta.outcome", BetaExposure = "beta.exposure", 
+                                       SdOutcome = "se.outcome", SdExposure = "se.exposure", 
+                                       OUTLIERtest = TRUE, DISTORTIONtest = TRUE, 
+                                       data = input, NbDistribution = 1000, 
+                                       SignifThreshold = 0.05)
+      cat("\nResults for item:", item_name, "\n")
+      print(mr_presso_results)
+    }, warning = handle_warning)
+  }, error = function(e) {
+    cat("\nAn error occurred with item:", item_name, "\n")
+    cat("Error message:", e$message, "\n")
+  })
+}
+
+#HtoM_mf
+# Iterate over the list of items
+for (item_name in names(input_mrpresso_HtoM_mf)) {
+  current_item <- item_name  # Track the current item for the warning handler
+  tryCatch({
+    # Get the object from the environment
+    input <- get(item_name, envir = .GlobalEnv)
+    
+    # Perform the MR-PRESSO test
+    withCallingHandlers({
+      mr_presso_results <- mr_presso(BetaOutcome = "beta.outcome", BetaExposure = "beta.exposure", 
+                                       SdOutcome = "se.outcome", SdExposure = "se.exposure", 
+                                       OUTLIERtest = TRUE, DISTORTIONtest = TRUE, 
+                                       data = input, NbDistribution = 1000, 
+                                       SignifThreshold = 0.05)
+      cat("\nResults for item:", item_name, "\n")
+      print(mr_presso_results)
+    }, warning = handle_warning)
+  }, error = function(e) {
+    cat("\nAn error occurred with item:", item_name, "\n")
+    cat("Error message:", e$message, "\n")
+  })
+}
+
+# Close connection to file
+sink()
+sink(type = "message")
+close(output_connection_HtoM)
+
+# Output saved in mr_presso_results_HtoM.txt
+# After this select items that need to be run with increased NbDistribution
+# Run in SNELLIUS 
+
+```
+
+
+--------Direction: mental illness to sex hormones--------
+```{r Run MR Presso with standard NbDistribution MtoH}
+
+# Save results of console
+# File to save the output
+output_file_mrpresso_MtoH <- "C:/Users/P005052/OneDrive - Amsterdam UMC/PhD/Hormones/Results/MRPresso/mr_presso_results_MtoH.txt"
+
+# Open a connection to the file
+output_connection_MtoH <- file(output_file_mrpresso_MtoH, open = "wt")
+
+# Redirect R output to the file
+sink(output_connection_MtoH)
+sink(output_connection_MtoH, type = "message")
+
+# Function to handle warnings
+handle_warning <- function(w) {
+  cat("\nWarning for item:", current_item, "\n")
+  cat("Warning message:", conditionMessage(w), "\n")
+  invokeRestart("muffleWarning")
+}
+
+#MtoH_f
+# Iterate over the list of items
+for (item_name in names(input_mrpresso_MtoH_f)) {
+  current_item <- item_name  # Track the current item for the warning handler
+  tryCatch({
+    # Get the object from the environment
+    input <- get(item_name, envir = .GlobalEnv)
+    
+    # Perform the MR-PRESSO test
+    withCallingHandlers({
+      mr_presso_results <- mr_presso(BetaOutcome = "beta.outcome", BetaExposure = "beta.exposure", 
+                                       SdOutcome = "se.outcome", SdExposure = "se.exposure", 
+                                       OUTLIERtest = TRUE, DISTORTIONtest = TRUE, 
+                                       data = input, NbDistribution = 1000, 
+                                       SignifThreshold = 0.05)
+      cat("\nResults for item:", item_name, "\n")
+      print(mr_presso_results)
+    }, warning = handle_warning)
+  }, error = function(e) {
+    cat("\nAn error occurred with item:", item_name, "\n")
+    cat("Error message:", e$message, "\n")
+  })
+}
+
+#MtoH_m
+# Iterate over the list of items
+for (item_name in names(input_mrpresso_MtoH_m)) {
+  current_item <- item_name  # Track the current item for the warning handler
+  tryCatch({
+    # Get the object from the environment
+    input <- get(item_name, envir = .GlobalEnv)
+    
+    # Perform the MR-PRESSO test
+    withCallingHandlers({
+      mr_presso_results <- mr_presso(BetaOutcome = "beta.outcome", BetaExposure = "beta.exposure", 
+                                       SdOutcome = "se.outcome", SdExposure = "se.exposure", 
+                                       OUTLIERtest = TRUE, DISTORTIONtest = TRUE, 
+                                       data = input, NbDistribution = 1000, 
+                                       SignifThreshold = 0.05)
+      cat("\nResults for item:", item_name, "\n")
+      print(mr_presso_results)
+    }, warning = handle_warning)
+  }, error = function(e) {
+    cat("\nAn error occurred with item:", item_name, "\n")
+    cat("Error message:", e$message, "\n")
+  })
+}
+
+#MtoH_mf
+# Iterate over the list of items
+for (item_name in names(input_mrpresso_MtoH_mf)) {
+  current_item <- item_name  # Track the current item for the warning handler
+  tryCatch({
+    # Get the object from the environment
+    input <- get(item_name, envir = .GlobalEnv)
+    
+    # Perform the MR-PRESSO test
+    withCallingHandlers({
+      mr_presso_results <- mr_presso(BetaOutcome = "beta.outcome", BetaExposure = "beta.exposure", 
+                                       SdOutcome = "se.outcome", SdExposure = "se.exposure", 
+                                       OUTLIERtest = TRUE, DISTORTIONtest = TRUE, 
+                                       data = input, NbDistribution = 1000, 
+                                       SignifThreshold = 0.05)
+      cat("\nResults for item:", item_name, "\n")
+      print(mr_presso_results)
+    }, warning = handle_warning)
+  }, error = function(e) {
+    cat("\nAn error occurred with item:", item_name, "\n")
+    cat("Error message:", e$message, "\n")
+  })
+}
+
+# Close connection to file
+sink()
+sink(type = "message")
+close(output_connection_MtoH)
+
+# Output saved in mr_presso_results_MtoH.txt
+# After this select items that need to be run with increased NbDistribution
+# Run in SNELLIUS 
+
+```
+
+
+
+
+
+
+
+
+
+
