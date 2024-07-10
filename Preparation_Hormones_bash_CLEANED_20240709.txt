@@ -1,0 +1,1356 @@
+##### Script preparation files for MR & genetic correlation ###
+
+# CONTAINS: Extracting and renaming columns for input files MR
+
+# Part of this script is executed in the cluster computer LISA, part in SNELLIUS (new version of LISA), part in terminal on Macbook, and part in MobaXTerm on a Windows laptop. Some packages had to be installed for working in the terminal. Due to change of laptops, some pathways may be older than others.
+
+# Last updated: 07-09-2024
+
+# Location data:
+cd “C:\Users\rveeneman\OneDrive - Amsterdam UMC\PhD\Hormones\Data”
+
+# Header format MR
+
+#    SNP - rs ID
+#    beta - The effect size. If the trait is binary then log(OR) should be used
+#    se - The standard error of the effect size
+#    effect_allele - The allele of the SNP which has the effect marked in beta
+#    other_allele - The non-effect allele
+#    eaf - The effect allele frequency
+#    Phenotype - The name of the phenotype for which the SNP has an effect
+
+You can also provide the following extra information:
+
+#    chr - Physical position of variant (chromosome)
+#    position - Physical position of variant (position)
+#    samplesize - Sample size for estimating the effect size
+#    ncase - Number of cases
+#    ncontrol - Number of controls
+#    pval - The P-value for the SNP’s association with the exposure
+#    units - The units in which the effects are presented
+#    gene - The gene or other annotation for the the SNP
+
+# LDSC: The ldsc .sumstats format requires six pieces of information for each SNP:
+
+#    SNP - A unique identifier (e.g., the rs number)
+#    A1 - Allele 1 (effect allele)
+#    A2 - Allele 2 (non-effect allele)
+#    N - Sample size (which often varies from SNP to SNP)
+#    pval - A P-value
+#    beta/OR - A signed summary statistic (beta, OR, log odds, Z-score, etc)
+
+# *** Please note *** for the exposure files we preferred to select the SNPs for this from the GWAS. If a table was available we converted this from excel to text file using excel. 
+
+#############################
+#			    #
+#        SEX HORMONES       #
+#			    #
+#############################
+
+############################
+######### Oestrogen ########
+############################
+
+#------- Women -------#
+
+######## Pre-menopausal binary (Haas 2022) ########
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_pre_ESTRADICHOTOMIZED.txt > Epre_bin_oc.txt
+wc -l Epre_bin_oc.txt #9266332 
+
+# Add Phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print $0, "Phenotype"} NR>1{print $0, "Epre_bin"}' Epre_bin_oc.txt > Epre_bin_oc_P.txt
+mv Epre_bin_oc_P.txt Epre_bin_oc.txt
+
+# Exposure made from SNPs in GWAS table S2: 4 genome-wide significant SNPs
+
+######## Post-menopausal binary (Haas 2022) ########
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_post_ESTRADICHOTOMIZED.txt > Epost_bin_oc.txt
+wc -l Epost_bin_oc.txt #9266332 
+
+# Add Phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print $0, "Phenotype"} NR>1{print $0, "Epost_bin"}' Epost_bin_oc.txt > Epost_bin_oc_P.txt
+mv Epost_bin_oc_P.txt Epost_bin_oc.txt
+
+# Exposure made from SNPs in GWAS table S2: 6 genome-wide significant SNPs (same as pre-menopausal + 2 more)
+
+# Add Phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Epost_bin", $0}' Epost_bin_exp.txt > Epost_bin_exp_P.txt
+mv Epost_bin_exp.txt OLD_20240508
+mv Epost_bin_exp_P.txt Epost_bin_exp.txt
+
+######## Pre- & post-menopausal binary (Haas 2022) ########
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_all_ESTRADICHOTOMIZED.txt > E_f_oc.txt 
+wc -l E_f_oc.txt #9266332 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print $0, "Phenotype"} NR>1{print $0, "E_f"}' E_f_oc.txt > E_f_oc_P.txt
+mv E_f_oc_P.txt E_f_oc.txt
+
+# Exposure made from suppl table 2
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "E_f", $0}' E_f_exp.txt > E_f_exp_P.txt
+head E_f_exp_P.txt
+mv E_f_exp.txt OLD_20240508
+mv E_f_exp_P.txt E_f_exp.txt
+
+#-------- Men --------#
+
+######## Binary (Ruth, 2020) ########
+
+# Remove tabs
+sed 's/\t/ /g' GCST90012105_buildGRCh37.tsv > GCST90012105_buildGRCh37_modified.tsv
+
+# Rename header
+sed '1s/variant_id chromosome base_pair_location effect_allele other_allele effect_allele_frequency imputation_quality beta standard_error p_value/SNP chr base_pair_location effect_allele other_allele eaf imputation_quality beta se pval/' GCST90012105_buildGRCh37_modified.tsv > GCST90012105_buildGRCh37_col.tsv
+
+# Select columns
+awk 'BEGIN {OFS=" "} {print $1, $4, $5, $6, $8, $9, $10}' GCST90012105_buildGRCh37_col.tsv > E_males_oc1.txt
+wc -l E_males_oc1.txt #16582268 
+
+# Remove NAs
+awk '$1 != "NA" {print}' E_males_oc1.txt > E_males_oc2.txt
+wc -l E_males_oc2.txt #15733720 
+
+# Add sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 206927}' E_males_oc2.txt > E_males_oc.txt
+wc -l E_males_oc.txt #15733720 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "E_males", $0}' E_males_oc.txt > E_males_oc_P.txt
+head E_males_oc_P.txt
+mv E_males_oc.txt OLD_20240508
+mv E_males_oc_P.txt E_males_oc.txt
+
+# Exposure file from suppl table 11: 22 significant SNPs
+wc -l E_males_exp.txt #23
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "E_males", $0}' E_males_exp.txt > E_males_exp_P.txt
+head E_males_exp_P.txt
+mv E_males_exp.txt OLD_20240508
+mv E_males_exp_P.txt E_males_exp.txt
+
+############################
+####### Testosterone #######
+############################
+
+#------- Women -------#
+
+######## Pre-menopause (Haas 2022) ########
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_pre_TESTOSTERONE > Tpre_oc.txt
+wc -l Tpre_oc.txt #9266332
+
+# No significant hits for Testosterone in pre-menopausal women
+
+######## Post-menopause (Haas 2022) ########
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_post_TESTOSTERONE > Tpost_oc.txt
+wc -l Tpost_oc.txt #9266332
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Tpost", $0}' Tpost_oc.txt > Tpost_oc_P.txt
+head Tpost_oc_P.txt
+mv Tpost_oc.txt OLD_20240508
+mv Tpost_oc_P.txt Tpost_oc.txt
+
+# In table S3: 2 significant SNPs
+# Exposure file made from this table
+wc -l Tpost_exp.txt
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Tpost", $0}' Tpost_exp.txt > Tpost_exp_P.txt
+head Tpost_exp_P.txt
+mv Tpost_exp.txt OLD_20240508
+mv Tpost_exp_P.txt Tpost_exp.txt
+
+######## Pre- & post-menopause (Ruth 2020) ########
+# Headers are: variant_id      chromosome      base_pair_location      effect_allele   other_allele    effect_allele_frequency imputation_quality       beta    standard_error  p_value
+
+# Select columns
+awk 'BEGIN {OFS="\t"} {print $1, $4, $5, $6, $8, $9, $10}' GCST90012112_buildGRCh37.tsv > T_f_col.txt
+
+# Remove tabs replace with spaces
+sed 's/\t/ /g' T_f_col.txt > T_f_oc_spaces.txt 
+
+# Change to SNP effect_allele other_allele eaf beta se pval
+sed -i '1s/variant_id effect_allele other_allele effect_allele_frequency beta standard_error p_value/SNP effect_allele other_allele eaf beta se pval/' T_f_oc_spaces.txt 
+wc -l T_f_oc_spaces.txt #16580851
+
+# Remove NA's
+awk '$1 != "NA" {print}' T_f_oc_spaces.txt > T_f_oc1.txt
+
+# Add sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 230454}' T_f_oc1.txt > T_f_oc.txt
+wc -l T_f_oc.txt #15732532
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "T_f", $0}' T_f_oc.txt > T_f_oc_P.txt
+head T_f_oc_P.txt
+mv T_f_oc.txt OLD_20240508
+mv T_f_oc_P.txt T_f_oc.txt
+
+# Make exposure file from Suppl table 7 Ruth
+wc -l T_f_exp.txt #256
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "T_f", $0}' T_f_exp.txt > T_f_exp_P.txt
+head T_f_exp_P.txt
+mv T_f_exp.txt OLD_20240508
+mv T_f_exp_P.txt T_f_exp.txt
+
+#-------- Men --------#
+
+######## Continous (Ruth, 2020) ########
+
+# Headers:
+# variant_id      chromosome      base_pair_location      effect_allele   other_allele    effect_allele_frequency 
+# imputation_quality      beta    standard_error    p_value
+
+# Only select: variant_id effect_allele   other_allele    effect_allele_frequency beta  standard_error   p_value
+awk 'BEGIN {OFS="\t"} {print $1, $4, $5, $6, $8, $9, $10}' GCST90012113_buildGRCh37.tsv > T_m_oc_col.txt
+
+# Remove tabs
+sed 's/\t/ /g' T_m_oc_col.txt > T_m_oc_spaces.txt
+
+# Change to SNP effect_allele other_allele eaf beta se pval
+sed -i '1s/variant_id effect_allele other_allele effect_allele_frequency beta standard_error p_value/SNP effect_allele other_allele eaf beta se pval/' T_m_oc_spaces.txt 
+wc -l T_m_oc_spaces.txt #16577313 
+
+# Remove NA's
+awk '$1 != "NA" {print}' T_m_oc_spaces.txt > T_m_oc1.txt
+wc -l T_m_oc1.txt #15729163
+
+# Add sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 194453}' T_m_oc1.txt > T_m_oc.txt
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "T_m", $0}' T_m_oc.txt > T_m_oc_P.txt
+head T_m_oc_P.txt
+mv T_m_oc.txt OLD_20240508
+mv T_m_oc_P.txt T_m_oc.txt
+
+# Make exposure file from suppl table 6
+# Count number of exposure SNPs
+wc -l T_m_exp.txt #234 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "T_m", $0}' T_m_exp.txt > T_m_exp_P.txt
+head T_m_exp_P.txt
+mv T_m_exp.txt OLD_20240508
+mv T_m_exp_P.txt T_m_exp.txt
+
+#----- Both sexes ----#
+
+######## Continuous (Ruth, 2020) ########
+
+# Headers:
+# variant_id      chromosome      base_pair_location      effect_allele   other_allele    effect_allele_frequency 
+# imputation_quality      beta    standard_error    p_value
+
+# Only select: variant_id effect_allele   other_allele    effect_allele_frequency beta  standard_error   p_value
+awk 'BEGIN {OFS="\t"} {print $1, $4, $5, $6, $8, $9, $10}' GCST90012114_buildGRCh37.tsv > T_mf_oc_col.txt
+
+# Remove tabs
+sed 's/\t/ /g' T_mf_oc_col.txt > T_mf_oc_spaces.txt
+
+# Change to SNP effect_allele other_allele eaf beta se pval
+sed -i '1s/variant_id effect_allele other_allele effect_allele_frequency beta standard_error p_value/SNP effect_allele other_allele eaf beta se pval/' T_mf_oc_spaces.txt 
+wc -l T_mf_oc_spaces.txt #16578495 
+
+# Remove NA's
+awk '$1 != "NA" {print}' T_mf_oc_spaces.txt > T_mf_na.txt
+
+# Add samplesize
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 425097}' T_mf_na.txt > T_mf_oc.txt
+wc -l T_mf_oc.txt #15730280 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "T_mf", $0}' T_mf_oc.txt > T_mf_oc_P.txt
+head T_mf_oc_P.txt
+mv T_mf_oc.txt OLD_20240508
+mv T_mf_oc_P.txt T_mf_oc.txt
+
+# Exposure made from suppl table 5
+# Count number of exposure SNPs
+wc -l T_mf_exp.txt #239
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "T_mf", $0}' T_mf_exp.txt > T_mf_exp_P.txt
+head T_mf_exp_P.txt
+mv T_mf_exp.txt OLD_20240508
+mv T_mf_exp_P.txt T_mf_exp.txt
+
+############################
+########### SHBG ###########
+############################
+
+#------- Women -------#
+
+######## Pre-menopause (Haas 2022) ########
+# Change headers
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_pre_SHBG.txt > SHBGpre_oc.txt
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBGpre", $0}' SHBGpre_oc.txt > SHBGpre_oc_P.txt
+head SHBGpre_oc_P.txt
+mv SHBGpre_oc.txt OLD_20240508
+mv SHBGpre_oc_P.txt SHBGpre_oc.txt
+
+# Exposure made from supplement table 4
+wc -l SHBGpre_exp.txt #32
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBGpre", $0}' SHBGpre_exp.txt > SHBGpre_exp_P.txt
+head SHBGpre_exp_P.txt
+mv SHBGpre_exp.txt OLD_20240508
+mv SHBGpre_exp_P.txt SHBGpre_exp.txt
+
+######## Post-menopause (Haas 2022) ########
+# Change headers
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_post_SHBG.txt > SHBGpost_oc.txt
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBGpost", $0}' SHBGpost_oc.txt > SHBGpost_oc_P.txt
+head SHBGpost_oc_P.txt
+mv SHBGpost_oc.txt OLD_20240508
+mv SHBGpost_oc_P.txt SHBGpost_oc.txt
+
+# Exposure made from supplement table 4
+wc -l SHBGpost_exp.txt #104
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBGpost", $0}' SHBGpost_exp.txt > SHBGpost_exp_P.txt
+head SHBGpost_exp_P.txt
+mv SHBGpost_exp.txt OLD_20240508
+mv SHBGpost_exp_P.txt SHBGpost_exp.txt
+
+######## Pre- & post-menopause (Haas, 2022) ########
+sed '1s/SNP CHR BP A1 A2 N BETA SE P/SNP chr position effect_allele other_allele samplesize beta se pval/' EUR_all_SHBG.txt > SHBG_f_oc.txt
+wc -l SHBG_f_oc.txt #9266172
+
+# No exposure file only genetic correlations
+
+#----- Both sexes ----#
+
+######## Continous (Ruth, 2020) ########
+
+# Headers:
+# variant_id      chromosome      base_pair_location      effect_allele   other_allele    effect_allele_frequency 
+# imputation_quality      beta    standard_error    p_value
+
+# Only select: variant_id effect_allele   other_allele    effect_allele_frequency beta  standard_error   p_value
+awk 'BEGIN {OFS="\t"} {print $1, $4, $5, $6, $8, $9, $10}' GCST90012111_buildGRCh37.tsv > SHBG_mf_oc_col.txt
+
+# Change to SNP effect_allele other_allele eaf beta se pval
+sed -i '1s/variant_id effect_allele other_allele effect_allele_frequency beta standard_error p_value/SNP effect_allele other_allele eaf beta se pval/' SHBG_mf_oc_col.txt
+
+# Remove tabs
+sed 's/\t/ /g' SHBG_mf_oc_col.txt > SHBG_mf_oc_spaces.txt
+wc -l SHBG_mf_oc.txt #16582614 
+
+# Remove NA's
+awk '$1 != "NA" {print}' SHBG_mf_oc_spaces.txt > SHBG_mf_na.txt
+
+# Add sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 370125}' SHBG_mf_na.txt > SHBG_mf_oc.txt
+wc -l SHBG_mf_oc.txt #15734381  
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBG_mf", $0}' SHBG_mf_oc.txt > SHBG_mf_oc_P.txt
+head SHBG_mf_oc_P.txt
+mv SHBG_mf_oc.txt OLD_20240508
+mv SHBG_mf_oc_P.txt SHBG_mf_oc.txt
+
+# Count exposure SNPs (from supplement table 2)
+wc -l SHBG_mf_exp.txt #467
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBG_mf", $0}' SHBG_mf_exp.txt > SHBG_mf_exp_P.txt
+head SHBG_mf_exp_P.txt
+mv SHBG_mf_exp.txt OLD_20240508
+mv SHBG_mf_exp_P.txt SHBG_mf_exp.txt
+
+#-------- Men --------#
+
+# Continuous (Ruth, 2020)
+sed 's/\t/ /g' GCST90012109_buildGRCh37.tsv > GCST90012109_buildGRCh37_modified.tsv
+sed '1s/variant_id chromosome base_pair_location effect_allele other_allele effect_allele_frequency imputation_quality beta standard_error p_value/SNP chr base_pair_location effect_allele other_allele eaf imputation_quality beta se pval/' GCST90012109_buildGRCh37_modified.tsv > GCST90012109_buildGRCh37_col.tsv
+
+# Select columns
+awk 'BEGIN {OFS=" "} {print $1, $4, $5, $6, $8, $9, $10}' GCST90012109_buildGRCh37_col.tsv > SHBG_m_oc1.txt
+wc -l SHBG_m_oc1.txt #16582614 
+
+# Add sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 180726}' SHBG_m_oc1.txt > SHBG_m_oc2.txt
+wc -l SHBG_m_oc2.txt #16582614 
+
+# Remove NA's
+awk '$1 != "NA" {print}' SHBG_m_oc2.txt > SHBG_m_oc3.txt
+wc -l SHBG_m_oc3.txt #15734082
+
+# Rename
+mv SHBG_m_oc3.txt SHBG_m_oc.txt
+
+# For some reason LDSC does not seem to recognize the values in the p column
+# Convert to numeric using python
+chmod +x convert_SHBG.py
+./convert_SHBG.py
+# 13: FutureWarning: convert_objects is deprecated.  Use the datatype specific converters
+# pd.to_datetime, pd.to_timedelta and pd.to_numeric.
+# df['pval'] = df['pval'].convert_objects(convert_numeric=True)
+SHBG_oc_m_num.txt #now tab separated
+
+# Convert tabs
+sed 's/\t/ /g' SHBG_oc_m_num.txt > SHBG_m_oc.txt
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBG_m", $0}' SHBG_m_oc.txt > SHBG_m_oc_P.txt
+head SHBG_m_oc_P.txt
+mv SHBG_m_oc.txt OLD_20240508
+mv SHBG_m_oc_P.txt SHBG_m_oc.txt
+
+# Count exposure SNPs
+wc -l SHBG_m_exp.txt #277
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SHBG_m", $0}' SHBG_m_exp.txt > SHBG_m_exp_P.txt
+head SHBG_m_exp_P.txt
+mv SHBG_m_exp.txt OLD_20240508
+mv SHBG_m_exp_P.txt SHBG_m_exp.txt
+
+############################
+##### Age at Menarche ######
+############################
+
+###### Day, et al 2017 #####
+
+# Age at menarche including UK-Biobank
+
+# Convert chr:pos to rsid
+# Reference file CHr37 HRC_rs.text
+scp "/drives/c/Users/rveeneman/Downloads/HRC_rs.txt" rveeneman@snellius.surf.nl:~ 
+
+dos2unix sbatch Convert_chrbp_rsid_AgeMc.sh
+sbatch Convert_chrbp_rsid_AgeMc.sh
+
+# Calculate SE from p-value and 
+Rscript Convert_SE_R_AgeMc.r
+head Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE.txt
+
+# Delete NA’s in SNP column
+awk -F'\t' 'NR==1 || $1 != ""' Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE.txt Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered.txt
+wc -l Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_Filtered.txt #9619471
+
+# Some rsids are converted to a dot (.), remove these
+awk -F'\t' 'NR==1 || $1 != "."' Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered.txt > Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered_nodot.txt
+wc -l Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered_nodot.txt 
+
+# Change headers
+awk -F'\t' -v OFS='\t' 'NR==1 {$1="SNP"; $2="effect_allele"; $3="other_allele"; $4="beta"; $5="pval"; $6="Minor_Allele"; $7="Z"; $8="se"; print} NR>1 {print}' Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered_nodot.txt > Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered_nodot_modified.txt
+
+# Remove tabs
+sed 's/\t/ /g' Menarche_1KG_NatGen2017_WebsiteUpload_Converted_SE_filtered_nodot_modified.txt > AgeMc_oc1.txt
+wc -l AgeMc_oc1.txt #9611821
+
+# Error in R with outcome file: select only rows that contain 8 columns
+awk -F' ' 'NF >= 8' AgeMc_oc1.txt > AgeMc_oc2.txt
+wc -l AgeMc_oc2.txt #9607204
+
+# Add samplesize
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 255948}' AgeMc_oc2.txt > AgeMc_oc.txt
+
+# Exposure file is made from suppl table S2, changed .xlsx to .txt and replaced tabs by spaces
+# Exposure file contains all individuals, also 23andme
+
+############################
+##### Age at Menopause #####
+############################
+
+###### Ruth, et al 2021 #####
+
+# Age at menopause including UK-Biobank
+
+# Convert chr:pos to rsid
+# Reference file CHr37 HRC_rs.text (tab-separated)
+dos2unix Bash_file_bpchr_rsid_AgeMen.sh
+sbatch Bash_file_bpchr_rsid_AgeMen.sh
+
+# Replace all tabs with spaces
+sed 's/\t/ /g' reprogen_ANM_201K_170621_Converted.txt > reprogen_ANM_201K_170621_Tabsep.txt
+
+# Some rsids are converted to a dot (.), remove these
+awk -F' ' 'NR==1 || $1 != "."' reprogen_ANM_201K_170621_Tabsep.txt > reprogen_ANM_201K_170621_dot.txt
+wc -l reprogen_ANM_201K_170621_dot.txt #13129157
+awk '$1 != "NA"' reprogen_ANM_201K_170621_dot.txt > AgeMen_oc.txt
+wc -l AgeMen_oc.txt #10472524
+
+# According to paper 290 independent signals
+# Exposure file made from supplement table 
+
+############################
+####### Progesterone #######
+############################
+
+####### Women (Ruth, 2015) ######
+# Headers are: snpid_chr_pos_b37	effect	other	beta	se	p	af_other
+
+# Change to rsid
+do2unix Bash_file_bpchr_rsid_Progesterone.sh
+sbatch Bash_file_bpchr_rsid_Progesterone.sh
+# Product of this script is Ruth_et_al_EJHG_2015_Progesterone_Converted.txt 
+
+# Convert tabs
+sed 's/\t/ /g' Ruth_et_al_EJHG_2015_Progesterone_Converted.txt > Progesterone_oc_spaces.txt
+
+# By accident headers are in wrong order, change this
+head Progesterone_oc_spaces.txt
+# SNP effect_allele other_allele beta se pval af_other
+# rs34670419 G T 0.3464095 0.00000000000006085419 0.037 0.04539927
+sed -i '1s/SNP effect_allele other_allele beta se pval af_other/SNP effect_allele other_allele beta pval af_other se/' Progesterone_oc_spaces.txt
+
+# Make eaf column
+awk 'BEGIN {OFS=" "} {if (NR==1) print $0, "eaf"; else print $0, 1-$6}' Progesterone_oc_spaces.txt > Progesterone_oc_eaf.txt
+
+# Add sample size column 2913 = sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 2913}' Progesterone_oc_eaf.txt > Progesterone_oc_samplesize.txt
+
+# Remove NA's
+awk '$1 != "NA" {print}' Progesterone_oc_samplesize.txt > Progesterone_oc.txt
+wc -l Progesterone_oc_samplesize.txt #7730306 
+wc -l Progesterone_oc.txt #7066662
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Progesterone", $0}' Progesterone_oc.txt > Progesterone_oc_P.txt
+head Progesterone_oc_P.txt
+mv Progesterone_oc.txt OLD_20240508
+mv Progesterone_oc_P.txt Progesterone_oc.txt
+
+# Make exposure file based on table 2 in article, retrieve beta from GWAS
+wc -l Progesterone_exp.txt #3
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Progesterone", $0}' Progesterone_exp.txt > Progesterone_exp_P.txt
+head Progesterone_exp_P.txt
+mv Progesterone_exp.txt OLD_20240508
+mv Progesterone_exp_P.txt Progesterone_exp.txt
+
+##########################
+######## Prolactin #######
+##########################
+
+####### Women (Ruth, 2015) ######
+# Headers are: snpid_chr_pos_b37	effect	other	beta	se	p	af_other
+
+# Change to rsid
+do2unix Bash_file_bpchr_rsid_Prolactin.sh
+sbatch Bash_file_bpchr_rsid_Prolactin.sh
+# Product of this script is Ruth_et_al_EJHG_2015_Prolactin_Converted.txt 
+
+# Convert tabs
+sed 's/\t/ /g' Ruth_et_al_EJHG_2015_Prolactin_Converted.txt > Prolactin_oc_spaces.txt
+
+# By accident headers are in wrong order, change this
+head Prolactin_oc_spaces.txt
+#SNP effect_allele other_allele beta se pval af_other
+#rs10815158 G A 0.05564906 0.0000005194358 0.492 0.01100417
+sed -i '1s/SNP effect_allele other_allele beta se pval af_other/SNP effect_allele other_allele beta pval af_other se/' Prolactin_oc_spaces.txt
+
+# Make eaf column
+# Headers are: 
+awk 'BEGIN {OFS=" "} {if (NR==1) print $0, "eaf"; else print $0, 1-$6}' Prolactin_oc_spaces.txt > Prolactin_oc_eaf.txt
+
+# Add sample size column 2913 = sample size
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 2913}' Prolactin_oc_eaf.txt > Prolactin_oc_samplesize.txt
+
+# Remove NA's
+awk '$1 != "NA" {print}' Prolactin_oc_samplesize.txt > Prolactin_oc.txt
+wc -l Prolactin_oc_samplesize.txt #7730639 
+wc -l Prolactin_oc.txt #7066984 
+
+# No exposure file because no significant SNPs
+
+#############################
+#			    #
+#        MENTAL ILLNESS     #
+#			    #
+#############################
+
+############################
+####### Schizophrenia ######
+############################
+
+#------- Women -------#
+
+wc -l daner_PGC_SCZ_w3_75_0618a_eur_female #7,646,064
+
+# Select only necessary columns and convert OR to beta
+awk 'BEGIN {OFS=" "} {print $2, $4, $5, $6, log($9), $10, $11, $17, $18, $17+$18}' daner_PGC_SCZ_w3_75_0618a_eur_female > daner_PGC_SCZ_w3_75_0618a_eur_female_col.txt
+
+# Rename columns
+sed '1s/SNP A1 A2 FRQ_A_17760 -inf SE P Nca Nco/SNP effect_allele other_allele eaf beta se pval ncase ncontrol/' daner_PGC_SCZ_w3_75_0618a_eur_female_col.txt > daner_PGC_SCZ_w3_75_0618a_eur_female_names.txt
+
+# Rename file
+mv daner_PGC_SCZ_w3_75_0618a_eur_female_names.txt SCZ_f_oc.txt
+wc -l SCZ_f_oc.txt #7646064
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SCZ_f", $0}' SCZ_f_oc.txt > SCZ_f_oc_P.txt
+head SCZ_f_oc_P.txt
+mv SCZ_f_oc.txt OLD_20240508
+mv SCZ_f_oc_P.txt SCZ_f_oc.txt
+
+# Exposure file
+awk -F' ' 'NR == 1 || $7 <= 5e-8' SCZ_f_oc.txt > SCZ_f_exp.txt
+wc -l SCZ_f_exp.txt #1493 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SCZ_f", $0}' SCZ_f_exp.txt > SCZ_f_exp_P.txt
+head SCZ_f_exp_P.txt
+mv SCZ_f_exp.txt OLD_20240508
+mv SCZ_f_exp_P.txt SCZ_f_exp.txt
+
+#------- Men -------#
+
+# Select only necessary columns and convert OR to beta
+awk 'BEGIN {OFS=" "} {print $2, $4, $5, $6, log($9), $10, $11, $17, $18}' daner_PGC_SCZ_w3_75_0618a_eur_male > daner_PGC_SCZ_w3_75_0618a_eur_male_col.txt
+
+# Rename columns
+sed '1s/SNP A1 A2 FRQ_A_33097 -inf SE P Nca Nco/SNP effect_allele other_allele eaf beta se pval ncase ncontrol/' daner_PGC_SCZ_w3_75_0618a_eur_male_col.txt > daner_PGC_SCZ_w3_75_0618a_eur_male_names.txt
+
+# Rename file
+mv daner_PGC_SCZ_w3_75_0618a_eur_male_names.txt SCZ_m_oc.txt
+wc -l SCZ_m_oc.txt #7647199 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SCZ_m", $0}' SCZ_m_oc.txt > SCZ_m_oc_P.txt
+head SCZ_m_oc_P.txt
+mv SCZ_m_oc.txt OLD_20240508
+mv SCZ_m_oc_P.txt SCZ_m_oc.txt
+
+# Exposure file
+awk -F' ' 'NR == 1 || $7 <= 5e-8' SCZ_m_oc.txt > SCZ_m_exp.txt
+wc -l SCZ_m_exp.txt #9711 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "SCZ_m", $0}' SCZ_m_exp.txt > SCZ_m_exp_P.txt
+head SCZ_m_exp_P.txt
+mv SCZ_m_exp.txt OLD_20240508
+mv SCZ_m_exp_P.txt SCZ_m_exp.txt
+
+#------- Sexes combined -------#
+
+# Already prepared by Jorien Treur
+mv SCZ3_3.dat SCZ_mf_oc.txt
+
+# Exposure file
+awk -F' ' 'NR == 1 || $8 <= 5e-8' SCZ3_3.dat > SCZ_mf_exp.txt
+wc -l SCZ_mf_exp.txt #20382
+
+Addendum: 
+########## Sample sizes #########
+# For SCZ_f_oc.txt, SCZ_m_oc.txt and SCZ_mf_oc.txt I had to add ncases + ncontrols columns to create samplesize column for genetic correlations
+
+awk 'BEGIN {FS=OFS=" "} {if(NR==1) print $0, "samplesize"; else print $0, ($8+$9)}' SCZ_f_oc.txt > SCZ_f_oc2.txt
+rm SCZ_f_oc.txt
+mv SCZ_f_oc2.txt SCZ_f_oc.txt
+awk 'BEGIN {FS=OFS=" "} {if(NR==1) print $0, "samplesize"; else print $0, ($8+$9)}' SCZ_m_oc.txt > SCZ_m_oc2.txt
+rm SCZ_m_oc.txt
+mv SCZ_m_oc2.txt SCZ_m_oc.txt
+awk 'BEGIN {FS=OFS=" "} {if(NR==1) print $0, "samplesize"; else print $0, ($8+$9)}' SCZ_mf_oc.txt > SCZ_mf_oc2.txt
+rm SCZ_mf_oc.txt
+mv SCZ_mf_oc2.txt SCZ_mf_oc.txt
+  
+############################
+#### Depressive disorder ###
+############################
+
+####### Blokland (without UK Biobank) ######
+
+#------- Women -------#
+
+wc -l meta_STDERR_mdd_eur_auto_F1_sexstratified_06_gcON_pgc+ipsych.txt #6482596
+
+# Select columns
+awk 'BEGIN {OFS=" "} {print $1, $2, $3, $4, $8, $9, $10, $18}' meta_STDERR_mdd_eur_auto_F1_sexstratified_06_gcON_pgc+ipsych.txt > meta_STDERR_mdd_eur_auto_F1_col.txt
+
+# Rename
+sed '1s/SNP A1 A2 Freq1 Beta SE P N_TOTAL/SNP effect_allele other_allele eaf beta se pval samplesize/' meta_STDERR_mdd_eur_auto_F1_col.txt > meta_STDERR_mdd_eur_auto_F1_names.txt
+
+# Convert tabs to spaces 
+sed 's/\t/ /g' meta_STDERR_mdd_eur_auto_F1_names.txt > DeprB_f_oc.txt
+wc -l DeprB_f_oc.txt #6482596
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "DeprB_f", $0}' DeprB_f_oc.txt > DeprB_f_oc_P.txt
+head DeprB_f_oc_P.txt
+mv DeprB_f_oc.txt OLD_20240508
+mv DeprB_f_oc_P.txt DeprB_f_oc.txt
+
+# Exposure file
+awk -F' ' 'NR == 1 || $7 <= 5e-8' DeprB_f_oc.txt > DeprB_f_exp.txt
+wc -l DeprB_f_exp.txt #0
+
+# ** No significant SNPs **
+
+#-------- Men --------#
+
+wc -l meta_STDERR_mdd_eur_auto_M1_sexstratified_06_gcON_pgc+ipsych.txt #6464817 
+awk 'BEGIN {OFS=" "} {print $1, $2, $3, $4, $8, $9, $10, $18}' meta_STDERR_mdd_eur_auto_M1_sexstratified_06_gcON_pgc+ipsych.txt > meta_STDERR_mdd_eur_auto_M1_col.txt
+
+# Rename
+sed '1s/SNP A1 A2 Freq1 Beta SE P N_TOTAL/SNP effect_allele other_allele eaf beta se pval samplesize/' meta_STDERR_mdd_eur_auto_M1_col.txt > meta_STDERR_mdd_eur_auto_M1_names.txt
+
+# Convert tabs to spaces 
+sed 's/\t/ /g' meta_STDERR_mdd_eur_auto_M1_names.txt > DeprB_m_oc.txt
+wc -l DeprB_m_oc.txt #6464817 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "DeprB_m", $0}' DeprB_m_oc.txt > DeprB_m_oc_P.txt
+head DeprB_m_oc_P.txt
+mv DeprB_m_oc.txt OLD_20240508
+mv DeprB_m_oc_P.txt DeprB_m_oc.txt
+
+# Exposure file
+awk -F' ' 'NR == 1 || $7 <= 5e-8' DeprB_m_oc.txt > DeprB_m_exp.txt
+wc -l DeprB_m_exp.txt #0
+
+# ** No significant SNPs **
+
+###### Silveira (with UK Biobank) ######
+# Used for genetic correlations
+
+#------- Women -------#
+ 
+# Change tabs into spaces 
+tr '\t' ' ' < GWAS.BroadMDD_Females.txt > GWAS.BroadMDD_Females_tab.txt
+
+# Change headers
+sed '1s/rsid chromosome position alternative.allele effect.allele beta SE p.value/SNP chr position other_allele effect_allele beta se pval/' GWAS.BroadMDD_Females_tab.txt > DeprS_f_oc.txt
+
+# Rename 
+mv DeprS_f_oc.txt DeprS_f_oc2.txt
+
+# Add samplesize
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 146274}' DeprS_f_oc2.txt > DeprS_f_oc.txt
+wc -l DeprS_f_oc.txt #7351436 
+
+# No exposure file needed for genetic correlations
+
+#-------- Men --------#
+
+# Change tabs into spaces
+tr '\t' ' ' < GWAS.BroadMDD_Males.txt > GWAS.BroadMDD_Males_tab.txt
+
+# Change headers
+sed '1s/rsid chromosome position alternative.allele effect.allele beta SE p.value/SNP chr position other_allele effect_allele beta se pval/' GWAS.BroadMDD_Males_tab.txt > DeprS_m_oc.txt
+
+# Rename 
+mv DeprS_m_oc.txt DeprS_m_oc2.txt
+
+# Add samplesize
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 127867}' DeprS_m_oc2.txt > DeprS_m_oc.txt
+wc -l DeprS_m_oc.txt #7351436 
+
+# No exposure file needed for genetic correlations
+
+####### No UK-Biobank (Wray, 2018) ######
+
+#----- Both sexes ----#
+
+# File name daner_pgc_mdd_meta_w2_no23andMe_rmUKBB
+
+# Headers are: CHR     SNP     BP      A1      A2      FRQ_A_40463     FRQ_U_313436    INFO    OR      SE      P       ngt     Direction       HetISqt HetDf   HetPVa  Nca      Nco     Neff_half
+# FRQ_A = freq A1 cases, use this one
+
+# Select columns SNP A1 A2 FRQ_A_40463 OR      SE      P  Nca      Nco
+# Convert OR to beta
+# Make samplesize column Na+Nco
+# Change names to MR columns
+
+# All steps in bash script
+dos2unix Bash_file_DeprWray.sh
+sbatch Bash_file_DeprWray.sh
+
+# Count rows
+wc -l DeprW_mf_oc.txt #9874288 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "DeprW_mf", $0}' DeprW_mf_oc.txt > DeprW_mf_oc_P.txt
+head DeprW_mf_oc_P.txt
+mv DeprW_mf_oc.txt OLD_20240508
+mv DeprW_mf_oc_P.txt DeprW_mf_oc.txt
+
+# Exposure file made from full sumstats (without UKB no table available in GWAS)
+wc -l DeprW_mf_exp.txt #53
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "DeprW_mf", $0}' DeprW_mf_exp.txt > DeprW_mf_exp_P.txt
+head DeprW_mf_exp_P.txt
+mv DeprW_mf_exp.txt OLD_20240508
+mv DeprW_mf_exp_P.txt DeprW_mf_exp.txt
+
+######## With UK Biobank (Howard, 2019) #######
+
+#----- Both sexes ----#
+
+# Headers are: MarkerName A1 A2 Freq LogOR StdErrLogOR P
+
+# Rename
+sed '1s/MarkerName A1 A2 Freq LogOR StdErrLogOR P/SNP effect_allele other_allele eaf beta se pval/' PGC_UKB_depression_genome-wide.txt > DeprH_mf_col.txt
+
+# Convert tabs to spaces 
+sed 's/\t/ /g' DeprH_mf_col.txt > DeprH_mf_sp.txt
+
+# Add samplesize column
+awk 'BEGIN {FS=OFS=" "} NR==1 {print $0, "samplesize"} NR>1 {print $0, 807553}' DeprH_mf_sp.txt > DeprH_mf_oc.txt
+wc -l DeprH_mf_oc.txt #8483302
+
+############################
+##### Bipolar disorder #####
+############################
+
+######## Without UK-Biobank (Haas, 2022) #######
+
+#------- Women -------#
+
+wc -l meta_STDERR_bip_eur_auto_F1_sexstratified_06_gcON_pgc+ipsych.txt #6652153
+
+# Select columns
+# I want to select SNP, A1, A2, Freq1, Beta, SE, P, N_TOTAL
+awk 'NR==1 {for (i=1; i<=NF; i++) if ($i == "SNP" || $i == "A1" || $i == "A2" || $i == "Freq1" || $i == "Beta" || $i == "SE" || $i == "P" || $i == "N_TOTAL") a[i] = 1} {for (i=1; i<=NF; i++) if (a[i]) printf "%s\t", $i; printf "\n"}' meta_STDERR_bip_eur_auto_F1_sexstratified_06_gcON_pgc+ipsych.txt > BD_oc_f_col.txt
+
+# Add Phenotype column
+awk 'BEGIN {OFS="\t"} NR==1 {print "Phenotype", $0} NR>1 {print "BD", $0}' BD_oc_f_col.txt > BD_oc_f_col_2.txt
+
+# Rename
+awk 'BEGIN {OFS="\t"} NR==1 {print "Phenotype", "SNP", "effect_allele", "other_allele", "eaf", "beta", "se", "pval", "samplesize"} NR>1 {print $0}' BD_oc_f_col_2.txt > BD_oc_f_col_3.txt 
+
+# Make space separated 
+sed 's/\t/ /g' BD_oc_f_col_3.txt > Bip_f_oc.txt
+
+# Exposure file
+awk 'NR == 1 || $8 <= 5e-8' Bip_f_oc.txt > Bip_f_exp.txt
+wc -l Bip_f_oc.txt #6652153
+
+wc -l Bip_f_exp.txt #2
+# Looked for proxy, and tried to find rsid (is now in chr:pos)
+grep 2:97385153 "/gpfs/home4/rveeneman/General/Reference_files/HRC_rs.txt"
+# No results 
+
+# ** No significant SNPs **
+
+#-------- Men --------#
+
+wc -l meta_STDERR_bip_eur_auto_M1_sexstratified_06_gcON_pgc+ipsych.txt  #6646004
+
+# Select columns
+# I want to select SNP, A1, A2, Freq1, Beta, SE, P, N_TOTAL
+awk 'NR==1 {for (i=1; i<=NF; i++) if ($i == "SNP" || $i == "A1" || $i == "A2" || $i == "Freq1" || $i == "Beta" || $i == "SE" || $i == "P" || $i == "N_TOTAL") a[i] = 1} {for (i=1; i<=NF; i++) if (a[i]) printf "%s\t", $i; printf "\n"}' meta_STDERR_bip_eur_auto_M1_sexstratified_06_gcON_pgc+ipsych.txt > BD_oc_m_col.txt
+
+# Add Phenotype column
+awk 'BEGIN {OFS="\t"} NR==1 {print "Phenotype", $0} NR>1 {print "BD", $0}' BD_oc_m_col.txt > BD_oc_m_col_2.txt
+
+# Rename
+awk 'BEGIN {OFS="\t"} NR==1 {print "Phenotype", "SNP", "effect_allele", "other_allele", "eaf", "beta", "se", "pval", "samplesize"} NR>1 {print $0}' BD_oc_m_col_2.txt > BD_oc_m_col_3.txt 
+
+# Make space separated 
+sed 's/\t/ /g' BD_oc_m_col_3.txt > Bip_m_oc.txt
+
+# Exposure file
+awk 'NR == 1 || $8 <= 5e-8' Bip_m_oc.txt > Bip_m_exp.txt
+wc -l Bip_m_oc.txt #6646004 
+wc -l Bip_m_exp.txt #1
+
+# In total only 1 significant SNP -> did not use this as exposure
+
+######## Without UK-Biobank (Mullins, 2021) #######
+
+#----- Both sexes ----#
+
+# Headers are: CHR     SNP     BP      A1      A2      FRQ_A_40463     FRQ_U_313436    INFO    OR      SE      P       ngt     Direction       HetISqt HetDf   HetPVa  Nca      Nco     Neff_half
+# FRQ_A = freq A1 cases, use this one
+
+# Select columns SNP A1 A2 FRQ_A_40463 OR      SE      P  Nca      Nco
+# Convert OR to beta
+# Make samplesize column Na+Nco
+# Change names to MR columns
+
+# All steps in bash script
+dos2unix Bash_file_Bip_Mullins.sh
+sbatch Bash_file_Bip_Mullins.sh
+
+# Count rows
+wc -l BDnoUKB_mf_oc.txt #7605226  
+wc -l BDnoUKB_mf_exp.txt #3180
+
+# Some rows contain only  -inf        0
+awk -F' ' 'NF >= 10' BDnoUKB_mf_oc.txt > BDnoUKB_mf_oc1.txt
+rm BDnoUKB_mf_oc.txt
+mv BDnoUKB_mf_oc1.txt BDnoUKB_mf_oc.txt
+wc -l BDnoUKB_mf_oc.txt
+# Deleted the rows manually
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "BDnoUKB_mf", $0}' BDnoUKB_mf_oc.txt > BDnoUKB_mf_oc_P.txt
+head BDnoUKB_mf_oc_P.txt
+mv BDnoUKB_mf_oc.txt OLD_20240508
+mv BDnoUKB_mf_oc_P.txt BDnoUKB_mf_oc.txt
+
+# Exposure made from sumstats
+awk 'NR == 1 || $8 <= 5e-8' BDnoUKB_mf_oc.txt > BDnoUKB_mf_exp.txt
+wc -l BDnoUKB_mf_exp.txt #3092 
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "BDnoUKB_mf", $0}' BDnoUKB_mf_exp.txt > BDnoUKB_mf_exp_P.txt
+head BDnoUKB_mf_exp_P.txt
+mv BDnoUKB_mf_exp.txt OLD_20240508
+mv BDnoUKB_mf_exp_P.txt BDnoUKB_mf_exp.txt
+
+####### With UK Biobank (Mullins, 2021) #######
+
+#----- Both sexes ----#
+
+# File name: pgc-bip2021-all.vcf.tsv
+
+# Delete readme
+sed -n '/^##/!p' "C:\Users\P005052\OneDrive - Amsterdam UMC\PhD\Hormones\Data\Original_data\Bipolar_Mullins_2021\Prepared_files\pgc-bip2021-all.vcf.tsv" > "C:\Users\P005052\OneDrive - Amsterdam UMC\PhD\Hormones\Data\Original_data\Bipolar_Mullins_2021\Prepared_files\pgc-bip2021-all.txt"
+
+# Calculate EAF
+awk -v OFS='\t' 'BEGIN { FS=OFS="\t" } { if (NR == 1) { print $0, "EAF" } else if ($14 + $15 > 0) { print $0, sprintf("%.6f", (($10 * $14) + ($11 * $15)) / ($14 + $15)) } else { print $0, "NA" } }' pgc-bip2021-all.txt > BD_mf_oc_eaf.txt
+
+# Headers are: CHROM  POS     ID      A1      A2      BETA    SE      PVAL    NGT     FCAS    FCON    IMPINFO NEFFDIV2        NCAS    NCON    DIRE
+# Select necessary columns
+awk -F'\t' 'BEGIN {OFS="\t"} NR > 1 {print $3, $4, $5, $6, $7, $8, $14, $15, $14+$15, $17}' BD_mf_oc_eaf.txt > BD_mf_oc_sel.txt
+
+# Rename columns
+awk 'BEGIN {print "SNP", "effect_allele", "other_allele", "beta", "se", "pval", "ncase", "ncontrol", "samplesize", "eaf"} {print $0}' BD_mf_oc_sel.txt > BD_mf_oc_col.txt
+
+# Replace tabs with spaces
+sed 's/\t/ /g'  BD_mf_oc_col.txt > BD_mf_oc.txt
+
+# No exposure file needed
+
+#############################
+#			    #
+#        MEDIATORS          #
+#			    #
+#############################
+
+############################
+############ CRP ###########
+############################
+
+# In SNELLIUS
+
+# Save readme
+grep "^##" ieu-b-35.vcf > CRP_readme.txt
+# Important information in readme:
+##FORMAT=<ID=ES,Number=A,Type=Float,Description="Effect size estimate relative to the alternative allele">
+##FORMAT=<ID=LP,Number=A,Type=Float,Description="-log10 p-value for effect estimate">
+##FORMAT=<ID=AF,Number=A,Type=Float,Description="Alternate allele frequency in the association study">
+
+# Remove readme
+grep -v "^##" ieu-b-35.vcf > temp_CRP_no_header.txt
+
+# Manually remove # in the first row to make it normal headers
+nano temp_CRP_no_header.txt
+head temp_CRP_no_header.txt
+
+# Need to split the last two columns into multiple columns and then extract necessary information
+# It now looks like this:
+#CHROM   POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  ieu-b-35
+#1       752566  rs3094315       G       A       .       PASS    AF=0.825194     ES:SE:LP:AF:SS:ID       0.005999:0.006932:0.412563:0.825194:204402:rs3094315
+
+# Prepare header line
+awk 'NR==1 {print $1, $2, $3, $4, $5, $6, $7, $8, $9, "ES", "SE", "LP", "AF", "SS", "ID"}' OFS='\t' temp_CRP_no_header.txt > temp_CRP_only_header.txt
+
+# Prepare data
+awk 'NR>1 {n = split($10, a, ":"); print $1, $2, $3, $4, $5, $6, $7, $8, $9, a[1], a[2], a[3], a[4], a[5], a[6]}' OFS='\t' temp_CRP_no_header.txt > temp_CRP_data.txt
+
+# Combine head and data 
+cat temp_CRP_only_header.txt temp_CRP_data.txt > temp_CRP_v1.txt
+
+# Replace tabs
+sed 's/\t/ /g' temp_CRP_v1.txt > temp_CRP_v2.txt
+
+# Select columns
+head temp_CRP_v1.txt
+# CHROM   POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  ES      SE      LP      AF      SS      ID
+awk 'BEGIN {OFS=" "} {print $3, $4, $5, $8, $9, $10, $11, $12, $13, $14}' temp_CRP_v2.txt > temp_CRP_v3.txt
+
+# Check 
+head temp_CRP_v3.txt
+# Remove another 2 columns
+# ID REF ALT INFO FORMAT ES SE LP AF SS
+awk 'BEGIN {OFS=" "} {print $1, $2, $3, $6, $7, $8, $9, $10}' temp_CRP_v3.txt > temp_CRP_v4.txt
+
+# Edit LP column (pvalues now in -log10)
+awk 'BEGIN {OFS=" "} {print $0, 10^(-$6)}' temp_CRP_v4.txt > temp_CRP_v5.txt
+
+# Rename
+head temp_CRP_v4.txt
+sed '1s/ID REF ALT ES SE LP AF SS 1/SNP other_allele effect_allele beta se pval_log10 eaf samplesize pval/' temp_CRP_v5.txt > temp_CRP_v6.txt
+# Note that reference allele = other_allele here, since the beta is relative to the alternative allele and thus the effect_allele
+
+# Add Phenotype column
+awk 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR!=1{print "CRP", $0}'  temp_CRP_v6.txt > CRP_oc.txt
+
+awk 'NR == 1 || $10 < 5e-8' CRP_oc.txt > temp_CRP_5e08.txt
+wc -l #3951 
+# In GWAS: "The HapMap meta-analysis identified 3,977 genome-wide-significant variants at p < 5 × 10−8"
+
+# For the exposure file I extract the snp rsids from Table1+TableS3 (significant SNPs new+previously identified) from the outcome file
+# Bash file created for extracting rsids
+sbatch extract_rsid.sh
+echo "Phenotype SNP other_allele effect_allele beta se pval_log10 eaf samplesize pval" | cat - temp_CRP_exp.txt > temp_CRP_exp_with_header.txt
+scp temp_CRP_exp_with_header.txt CRP_exp.txt
+wc -l CRP_exp.txt #31
+# Addendum: I realized there are some SNPs missing mentioned in the supplement, added those.
+mv temp_CRP_exp.txt temp_CRP_exp_OLD_20240222.txt
+mv temp_CRP_exp_with_header.txt temp_CRP_exp_with_header_OLD_20240222.txt
+mv CRP_exp.txt CRP_exp_OLD_20240222.txt
+
+# Rerun bash command with edited bash file
+sbatch extract_rsid.sh
+echo "Phenotype SNP other_allele effect_allele beta se pval_log10 eaf samplesize pval" | cat - temp_CRP_exp.txt > temp_CRP_exp_with_header.txt
+scp temp_CRP_exp_with_header.txt CRP_exp.txt
+wc -l CRP_exp.txt #47
+
+############################
+########## Alcohol #########
+############################
+
+########  Drinks per week (GSCAN 2022)  ########
+
+#----- Both sexes ----#
+
+# Replace tabs
+sed 's/\t/ /g' GSCAN_DrnkWk_2022_GWAS_SUMMARY_STATS_EUR_without_UKB.txt > temp_DrnkWk_v1.txt
+
+# Replace headers
+sed '1s/CHR POS RSID EFFECT_ALLELE OTHER_ALLELE AF_1000G BETA SE P N/chr position SNP effect_allele other_allele eaf beta se pval samplesize/' temp_DrnkWk_v1.txt > temp_DrnkWk_v2.txt
+
+# Add phenotype column
+awk 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR!=1{print "DrnkWk", $0}' temp_DrnkWk_v2.txt > DrnkWk_oc.txt
+
+# Only select genome-wide significant SNPs for the exposure
+# No table with only exposure without UKBiobank/23andme
+awk 'NR == 1 || $10 <= 5e-8' DrnkWk_oc.txt > DrnkWk_exp.txt
+wc -l DrnkWk_exp.txt #1342
+
+########  Alcohol dependence (Walters 2019)  ########
+
+#----- Both sexes ----#
+
+# Sumstats cleaned with package tidygwas, available in repository of our group
+# Based on the original file: pgc_alcdep.eur_discovery.aug2018_release.txt
+
+head alcoholdep_tidy.tsv
+#OUTCOME SNP     CHR     BP      A1      A2      EAF     B       SE      P       N       N_CAS   N_CON
+
+# Replace tabs
+sed 's/\t/ /g' alcoholdep_tidy.tsv > temp_AD_v1.txt
+
+# Replace headers
+sed '1s/OUTCOME SNP CHR BP A1 A2 EAF B SE P N N_CAS N_CON/Phenotype SNP CHR BP effect_allele other_allele eaf beta se pval samplesize ncases ncontrols/' temp_AD_v1.txt > AD_oc.txt
+
+# Error in R: some lines less than 13
+# Delete those
+mv AD_oc.txt temp_AD_v2.txt
+awk 'NF >= 13' temp_AD_v2.txt > AD_oc.txt
+
+# Exposure file
+# Made based on table 2
+# Slightly different estimates, selected SNPs from table 2 to find in our outcome file
+# Independence based on this
+# rs894368 deleted since this one is not genome-wide signifcant 
+# 3 SNPs left
+
+############################
+#### Smoking initiation ####
+############################
+
+########  Smoking initiation (GSCAN 2022)  ########
+
+# Replace tabs
+sed 's/\t/ /g' GSCAN_SmkInit_2022_GWAS_SUMMARY_STATS_EUR_without_UKB.txt > temp_SI_v1.txt
+
+# Replace headers
+sed '1s/CHR POS RSID EFFECT_ALLELE OTHER_ALLELE AF_1000G BETA SE P N/chr position SNP effect_allele other_allele eaf beta se pval samplesize/' temp_SI_v1.txt > temp_SI_v2.txt
+
+# Add phenotype column
+awk 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR!=1{print "SI", $0}' temp_SI_v2.txt > temp_SI_oc.txt
+
+# Only select genome-wide significant SNPs for the exposure
+# No table with only exposure without UKBiobank/23andme
+awk 'NR == 1 || $10 <= 5e-8' SI_oc.txt > SI_exp.txt
+wc -l SI_exp.txt #2879
+
+############################
+############ BMI ###########
+############################
+
+# Both sexes I have from my Schiz Bull paper 
+# Sex-stratified only available with multiple ancestries
+
+############################
+############ WHR ###########
+############################
+
+#-------- Men --------#
+
+# I manually deleted first rows containing readme information in Notepad 
+
+# Replace tabs
+sed 's/\t/ /g' GIANT_2015_WHR_MALES_EUR.txt > temp_WHR_m_v1.txt
+
+# Replace header
+sed '1s/MarkerName Chr Pos Allele1 Allele2 FreqAllele1HapMapCEU b se p N/SNP chr position effect_allele other_allele eaf beta se pval samplesize/' temp_WHR_m_v1.txt > temp_WHR_m_v2.txt
+
+# Add phenotype column
+awk 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR!=1{print "WHR_m", $0}' temp_WHR_m_v2.txt > WHR_m_oc.txt
+
+# Make exposure file
+awk 'NR == 1 || $10 <= 5e-8' WHR_m_oc.txt > WHR_m_exp.txt
+wc -l WHR_m_exp.txt #124
+
+#-------- Women --------#
+
+# I manually deleted first rows containing readme information in Notepad 
+
+# Replace tabs
+sed 's/\t/ /g' GIANT_2015_WHR_FEMALES_EUR.txt > temp_WHR_f_v1.txt
+
+# Replace header
+head temp_WHR_f_v1.txt
+#MarkerName Chr Pos Allele1 Allele2 FreqAllele1HapMapCEU b se p N
+sed '1s/MarkerName Chr Pos Allele1 Allele2 FreqAllele1HapMapCEU b se p N/SNP chr position effect_allele other_allele eaf beta se pval samplesize/' temp_WHR_f_v1.txt > temp_WHR_f_v2.txt
+
+# Add phenotype column
+awk 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR!=1{print "WHR_f", $0}' temp_WHR_f_v2.txt > WHR_f_oc.txt
+
+# Make exposure file
+awk 'NR == 1 || $10 <= 5e-8' WHR_f_oc.txt > WHR_f_exp.txt
+wc -l WHR_f_exp.txt #609
+
+#-------- Sexes combined --------#
+
+# Replace tabs
+sed 's/\t/ /g' GIANT_2015_WHR_COMBINED_EUR.txt > temp_WHR_mf_v1.txt
+
+# Replace header
+head temp_WHR_mf_v1.txt
+#MarkerName Chr Pos Allele1 Allele2 FreqAllele1HapMapCEU b se p N
+sed '1s/MarkerName Chr Pos Allele1 Allele2 FreqAllele1HapMapCEU b se p N/SNP chr position effect_allele other_allele eaf beta se pval samplesize/' temp_WHR_mf_v1.txt > temp_WHR_mf_v2.txt
+
+# Add phenotype column
+awk 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR!=1{print "WHR_mf", $0}' temp_WHR_mf_v2.txt > WHR_mf_oc.txt
+
+# Make exposure file
+awk 'NR == 1 || $10 <= 5e-8' WHR_mf_oc.txt > WHR_mf_exp.txt
+wc -l WHR_mf_exp.txt #553
+
+############################
+######### Cortisol #########
+############################
+
+########  Crawford (2021)  ########
+
+#-------- Sexes combined --------#
+
+# Select columns
+awk 'BEGIN {OFS="\t"} NR == 1 {print $1, $4, $5, $6, $10, $11, $12, $18} NR > 1 {print $1, $4, $5, $6, $10, $11, $12, $18}' crawford_2021_COR.txt > Cortisol_oc_col.txt
+
+# Replace tabs with spaces
+sed 's/\t/ /g' Cortisol_oc_col.txt > Cortisol_oc_spaces.txt
+
+# Rename columns
+# Headers are: 
+sed '1s/SNP Allele1 Allele2 Freq1 Effect StdErr Pval N/SNP effect_allele other_allele eaf beta se pval samplesize/' Cortisol_oc_spaces.txt > Cortisol_oc.txt
+
+# Select exposure SNPs (mentioned in paper as MR instruments)
+# rs9989237, rs2736898, rs11620763, rs7146221
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Cortisol", $0}' Cortisol_oc.txt > Cortisol_oc_P.txt
+head Cortisol_oc_P.txt
+mv Cortisol_oc.txt OLD_20240508
+mv Cortisol_oc_P.txt Cortisol_oc.txt
+
+# Add phenotype column
+awk -F, 'BEGIN {OFS=" "} NR==1{print "Phenotype", $0} NR>1{print "Cortisol", $0}' Cortisol_exp.txt > Cortisol_exp_P.txt
+head Cortisol_exp_P.txt
+mv Cortisol_exp.txt OLD_20240508
+mv Cortisol_exp_P.txt Cortisol_exp.txt
+
+#############################
+#			          #
+#          SELECTION OF PROXY SNPS          #
+#			          #
+#############################
+
+# If instruments contained less than 10 SNPs because exposure SNPs were not available in the outcome, we searched for proxy SNPs
+
+# ** Steps **
+# 1. Search for proxies in outcome
+# 2. Then in outcome file of the exposure
+# 3. Add to exposure (after clumping)
+
+# Used the LDproxy tool of LDlink to search for proxies: https://ldlink.nih.gov/?tab=ldproxy 
+
+# All exposures with proxies:
+# - DeprW_mf_exp_ProgAgeMcMen.txt
+# - Epost_bin_exp_DeprB_f.txt
+# - E_f_exp_DeprB_f.txt
+# - E_males_exp_DeprB_m.txt
+# - E_males_exp_Bip_m.txt
+
+#***********SCRIPT***********
+
+#### deprW_mf ####
+grep -E 'rs12658032|rs147831713|rs1592757' Progesterone
+# rs1592757 is present
+grep rs1592757 DeprW_mf_oc.txt 
+#DeprW_mf rs1592757 0.0544977 0.0094 C G 0.367 5.974e-9 45396 97250 142646
+
+grep -E 'rs12658032|rs147831713|rs1592757' AgeMc_MR_oc.txt
+# rs1592757 is present
+grep rs1592757 DeprW_mf_oc.txt
+# DeprW_mf rs1592757 0.0544977 0.0094 C G 0.367 5.974e-9 45396 97250 142646
+
+grep -E 'rs12658032|rs147831713|rs1592757' AgeMen_MR_oc.txt
+# rs1592757 is present
+grep rs1592757 DeprW_mf_oc.txt 
+#DeprW_mf rs1592757 0.0544977 0.0094 C G 0.367 5.974e-9 45396 97250 142646
+
+# Added the SNP to the exposure file, after clumping
+# Manually made this proxy file DeprW_mf_exp_ProgAgeMcMen.txt
+
+# Used DeprW_mf_exp_ProgAgeMcMen.txt as exposure in the relations of DeprW_mf with Progesterone, AgeMc, AgeMen.
+
+#### Epost_bin ####
+
+# Search proxy for rs28807105
+grep rs28565141 DeprB_f_oc.txt
+grep rs9644811  DeprB_f_oc.txt
+# rs9644811 is present
+grep rs9644811 Epost_bin_oc.txt
+#rs9644811 8 37891747 G A 84194 0.0334784 0.0058418 1.00276e-08 Epost_bin
+# Not significant 
+grep rs13256052 Epost_bin_oc.txt
+#rs13256052 8 37896700 A G 84194 0.034405 0.0058862 5.0833e-09 Epost_bin
+scp Epost_bin_exp.txt Epost_bin_exp_DeprB_f.txt 
+
+head Epost_bin_oc.txt
+#SNP chr position effect_allele other_allele samplesize beta se pval Phenotype
+
+head Epost_bin_exp_DeprB_f.txt 
+#Phenotype SNP effect_allele other_allele eaf beta se pval samplesize
+
+echo "Epost_bin rs13256052 A G NA 0.034405 0.0058862 5.0833e-09 84194" Epost_bin_exp_DeprB_f.txt 
+# I manually removed rs28807105
+
+# Used Epost_bin_exp_DeprB_f.txt as exposure in the relation of Epost_bin with DeprB_f.
+
+#### E_f ####
+
+# Search proxy for rs72823349 
+grep -E 'rs9393800|rs9368497|rs9379969' DeprB_f_oc.txt
+#No results
+
+# Search proxy for rs34929649 
+grep -E 'rs7887 |rs3130680 |rs2844457 |rs2763982 ' DeprB_f_oc.txt
+#No results
+grep -E 'rs7887 |rs3130680 |rs2844457 |rs2763982 ' Bip_f_oc.txt
+#No results
+
+# Search proxy for rs35997018
+grep -E 'rs190454952|rs28416520' DeprB_f_oc.txt
+#No results
+grep -E 'rs7887 |rs3130680|rs2844457|rs2763982' Bip_f_oc.txt
+#No results
+
+# Search proxy for rs28807105
+grep -E 'rs28565141|rs9644811|rs13256052|rs28612322 |rs28366815' DeprB_f_oc.txt
+#DeprB_f rs9644811 A G 0.7668 0.0201 0.0227 0.3757 20036
+#DeprB_f rs13256052 A G 0.2324 -0.0162 0.0227 0.4753 20077
+
+grep rs9644811 E_f_oc.txt
+# rs9644811 8 37891747 G A 229966 0.0210562 0.00352265 2.27082e-09 E_f
+
+head E_f_oc.txt
+#SNP chr position effect_allele other_allele samplesize beta se pval Phenotype
+
+head E_f_exp.txt
+#Phenotype SNP effect_allele other_allele eaf samplesize beta se pval
+
+scp E_f_exp.txt E_f_exp_DeprB_f.txt
+echo "E_f rs9644811 G A NA 0.0210562 0.00352265 2.27082e-09 229966" >> E_f_exp_DeprB_f.txt
+# Manually removed rs28807105
+
+# Used E_f_exp_DeprB_f.txt as exposure in the relation of E_f with DeprB_f.
+
+#### E_m ####
+
+# Search proxy for rs112881196
+grep -E 'rs9282858 |rs138529890 | rs76712439 ' DeprB_m_oc.txt
+#DeprB_m rs138529890 A G 0.0272 0.1529 0.0759 0.04394 16079
+#DeprB_m rs9282858 T C 0.0299 0.0741 0.0648 0.2531 21993
+
+grep -E 'rs9282858 |rs138529890 | rs76712439 ' Bip_m_oc.txt
+#BD rs9282858 T C 0.0312 -0.1187 0.0976 0.2241 10572
+
+# Search proxy for rs570754094
+grep -E 'rs539075772 |rs528338790 |rs564001979 |rs532276842 ' DeprB_m_oc.txt
+#No results
+grep -E 'rs539075772 |rs528338790 |rs564001979 |rs532276842 ' Bip_m_oc.txt
+#No results
+
+# Search proxy for rs727428
+grep -E 'rs858516 | rs858519 ' DeprB_m_oc.txt
+#No results
+
+# Search proxy for rs117826558 
+grep rs11703720 DeprB_m_oc.txt
+#No results
+
+grep rs11703720 Bip_m_oc.txt
+#No results
+
+# Search proxy for rs10425629
+grep -E 'rs10425975 |rs10425963 |rs10426201 ' DeprB_m_oc.txt
+#DeprB_m rs10426201 A G 0.8442 -0.0425 0.0293 0.1478 22576
+
+grep -E 'rs10425975 |rs10425963 |rs10426201 ' Bip_m_oc.txt
+#BD rs10426201 A G 0.8363 0.0453 0.0344 0.1869 15906
+
+# Search proxy for rs5933688
+grep -E 'rs56066690 |rs112062538 ' DeprB_m_oc.txt
+#No results
+
+grep -E 'rs56066690 |rs112062538 ' Bip_m_oc.txt
+#No results
+
+# Look for snps in the exposure outcome
+grep rs9282858 E_males_oc.txt
+#E_males rs9282858 C T 0.969468 -0.0277136 0.0027178 2.0E-24 206927
+grep rs10426201 E_males_oc.txt
+#E_males rs10426201 G A 0.165341 0.00751754 0.00113826 4.3E-11 206927
+
+head E_males_oc.txt
+#Phenotype SNP effect_allele other_allele eaf beta se pval samplesize
+
+head E_males_exp.txt
+scp E_males_exp.txt E_males_exp_DeprB_m.txt
+scp E_males_exp.txt E_males_exp_Bip_m.txt
+
+#Phenotype SNP effect_allele other_allele eaf beta se pval samplesize
+echo "E_males rs9282858 C T 0.969468 -0.0277136 0.0027178 2.0E-24 206927" >> E_males_exp_DeprB_m.txt
+echo "E_males rs10426201 G A 0.165341 0.00751754 0.00113826 4.3E-11 206927" >> E_males_exp_DeprB_m.txt
+echo "E_males rs9282858 C T 0.969468 -0.0277136 0.0027178 2.0E-24 206927" >> E_males_exp_Bip_m.txt
+echo "E_males rs10426201 G A 0.165341 0.00751754 0.00113826 4.3E-11 206927" >> E_males_exp_Bip_m.txt
+
+# Used E_males_exp_DeprB_m.txt as exposure in the relation of E_males with DeprB_m, and E_males_exp_Bip_m.txt as exposure in the relation of E_males with Bip_m. 
+
+
+
+

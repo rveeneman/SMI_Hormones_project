@@ -1,0 +1,89 @@
+######### Genetic correlations ##########
+
+# Author: Rada R. Veeneman
+# Last updated: 07-09-2024
+
+############################
+########### LDSC ###########
+############################
+
+# Bulik-Sullivan, B., Finucane, H., Anttila, V. et al. An atlas of genetic correlations across human diseases and traits. Nat Genet 47, 1236–1241 (2015). https://doi.org/10.1038/ng.3406
+# Githhub: https://github.com/bulik/ldsc
+
+# Activate conda environment
+
+module load 2023
+module load Anaconda3/2023.07-2
+conda activate ldsc
+source activate ldsc
+
+# Make sure pythyon is called, not python3
+# To run python files use the following command: ./
+
+########## DATA PREPARATION ##########
+
+# Run mungestats for all files
+./mungestats_allfiles_2023-12-30.py
+
+# This file contains the following command for all files:
+
+#!/usr/bin/env python
+
+./munge_sumstats.py \
+  --sumstats /gpfs/home4/rveeneman/SMI_Hormones/Data/LDSC/Epre_bin_oc.txt \
+  --N-col samplesize \
+  --snp SNP \
+  --a1 effect_allele \
+  --a2 other_allele \
+  --signed-sumstats beta,0 \
+  --chunksize 500000 \
+  --p pval \
+  --merge-alleles  /gpfs/home4/rveeneman/ldsc/eur_w_ld_chr/w_hm3.snplist \
+  --out /gpfs/home4/rveeneman/SMI_Hormones/Data/LDSC/output/Epre_bin
+
+# Output is .sumstats.gz
+
+########## RUN LDSC ##########
+
+# I made python files to run, basic script is run_ldsc_working_script.py
+# Contains:
+
+#!/usr/bin/env python
+./ldsc.py \
+  --rg /gpfs/home4/rveeneman/SMI_Hormones/Data/LDSC/output/Epre_bin.sumstats.gz,/gpfs/home4/rveeneman/SMI_Hormones/Data/LDSC/output/SCZ_f.sumstats.gz \
+  --ref-ld-chr /gpfs/home4/rveeneman/ldsc/eur_w_ld_chr/ \
+  --w-ld-chr /gpfs/home4/rveeneman/ldsc/eur_w_ld_chr/ \
+  --out /gpfs/home4/rveeneman/SMI_Hormones/Data/LDSC/output/LDSC/Epre_bin_SCZ_f
+
+# Made a loop script to run all combinations of files in folders p1 and p2
+./run_ldsc_FINAL_20240709.py
+
+# Output is .log files, contains the rg estimates
+
+# ** Note that for some GWASs I had to add the samplesizes manually. **
+# These include:
+
+# Sex hormones, men:
+# E_males_oc.txt
+# T_m_oc.txt
+# SHBG_m_oc.txt
+
+# Sex hormones, women:
+# T_f_oc.txt
+# SHBG_f_oc.txt
+# AgeMc.txt
+
+# Sex hormones, both sexes:
+# SHBG_mf_oc.txt  
+# T_mf_oc.txt
+
+# Mental illness:
+# DeprS_f_oc.txt
+# DeprS_m_oc.txt 
+
+# I have added the sample sizes according to the papers
+
+
+
+
+
